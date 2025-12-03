@@ -4,27 +4,68 @@ import { Alert, StyleSheet, Text, View } from "react-native";
 import { OtpInput } from "react-native-otp-entry";
 import { Button } from "react-native-paper";
 
+import { api, API_ENDPOINTS } from "@/lib/api-client";
+import { saveAuthToken, saveUserId } from "@/lib/token-storage";
+
 export default function OtpScreen() {
   const router = useRouter();
-  const { phone } = useLocalSearchParams<{ phone?: string }>();
+  const { phone: phoneParam } = useLocalSearchParams<{
+    phone?: string | string[];
+  }>();
+  const phone = Array.isArray(phoneParam)
+    ? phoneParam[0] ?? ""
+    : phoneParam ?? "";
   const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (otp.length !== 6) {
       Alert.alert("Invalid OTP", "Please enter a valid 6-digit OTP");
       return;
     }
 
-    console.log("Verifying OTP:", otp, "for phone:", phone);
+    setLoading(true);
+    try {
+      // Call validate OTP endpoint
+      const response = await api.post<{
+        token?: string;
+        user_id?: number;
+        isNewUser?: boolean;
+        message?: string;
+      }>(
+        API_ENDPOINTS.USERS.VALIDATE_OTP,
+        {
+          phoneNo: phone,
+          otp: otp,
+        },
+        false
+      );
 
-    // simulate success for now
-    Alert.alert("Success", "OTP verified successfully");
+      // Save token and user_id if provided
+      if (response.token) {
+        await saveAuthToken(response.token);
+      }
+      if (response.user_id) {
+        await saveUserId(response.user_id);
+      }
 
-    // redirect based on OTP value
-    if (otp === "111111") {
-      router.push("/auth/new_user_form");
-    } else {
-      router.push("/user");
+      // Check if new user (needs to complete profile)
+      // Based on your API, you might need to adjust this logic
+      if (response.isNewUser || otp === "111111") {
+        router.replace({
+          pathname: "/auth/new_user_form",
+          params: { phone },
+        });
+      } else {
+        router.replace("/user");
+      }
+    } catch (error: any) {
+      Alert.alert(
+        "Verification Failed",
+        error.message || "Invalid OTP. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -35,11 +76,13 @@ export default function OtpScreen() {
 
       <OtpInput
         numberOfDigits={6}
-        onTextChange={(text) => setOtp(text)}
+        onTextChange={(text) => setOtp(text.replace(/[^0-9]/g, ""))}
         focusColor="#4CAF50"
         theme={{
           pinCodeContainerStyle: styles.otpBox,
+          pinCodeTextStyle: styles.otpDigit,
         }}
+        textInputProps={{ keyboardType: "number-pad", inputMode: "numeric" }}
       />
 
       <Button
@@ -47,6 +90,8 @@ export default function OtpScreen() {
         onPress={handleVerify}
         style={styles.button}
         buttonColor="#4CAF50"
+        loading={loading}
+        disabled={loading}
       >
         Verify OTP
       </Button>
@@ -80,6 +125,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,
+    minWidth: 48,
+    height: 56,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  otpDigit: {
+    fontSize: 18,
+    fontWeight: "600",
   },
   button: {
     width: "100%",

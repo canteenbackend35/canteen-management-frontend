@@ -1,66 +1,53 @@
-import { Link } from "expo-router";
-import { Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { supabase } from "@/lib/supabase";
+import { Redirect } from "expo-router";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 export default function Index() {
-  return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: "#f9fafb",
-      }}
-    >
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 24,
-            fontWeight: "bold",
-            marginBottom: 40,
-            color: "#111827",
-          }}
-        >
-          Canteen Management 🍱
-        </Text>
+  const [authState, setAuthState] = useState("checking");
+  // checking | redirectToUser | redirectToLogin
 
-        {/* Auth Button */}
-        <Link href="/auth" asChild>
-          <TouchableOpacity
-            style={{
-              backgroundColor: "#2563eb",
-              paddingVertical: 12,
-              paddingHorizontal: 30,
-              borderRadius: 10,
-              marginBottom: 20,
-            }}
-          >
-            <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
-              Login / Signup
-            </Text>
-          </TouchableOpacity>
-        </Link>
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      console.log(data);
 
-        {/* Dashboard Button */}
-        <Link href="/user" asChild>
-          <TouchableOpacity
-            style={{
-              backgroundColor: "#10b981",
-              paddingVertical: 12,
-              paddingHorizontal: 30,
-              borderRadius: 10,
-            }}
-          >
-            <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
-              Dashboard
-            </Text>
-          </TouchableOpacity>
-        </Link>
+      if (!data.session) {
+        // Token existed locally but Supabase says the session is invalid
+        // → Clear invalid session and redirect to login
+        setAuthState("redirectToLogin");
+        return;
+      }
+
+      // 3️⃣ Session valid → redirect to /user
+      setAuthState("redirectToUser");
+    };
+
+    checkAuth();
+  }, []);
+
+  // Show loading screen while checking
+  if (authState === "checking") {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" />
       </View>
-    </SafeAreaView>
-  );
+    );
+  }
+
+  // Logged in
+  if (authState === "redirectToUser") {
+    return <Redirect href="/user/dashboard" />;
+  }
+
+  // Not logged in
+  return <Redirect href="/auth" />;
 }
+
+const styles = StyleSheet.create({
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});
