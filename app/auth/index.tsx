@@ -1,45 +1,51 @@
-import { useRouter } from "expo-router";
+import { API_ENDPOINTS, api } from "@/lib/api-client";
+import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
 import { Button, TextInput } from "react-native-paper";
 
-export default function PhoneNumberScreen() {
-  const [phone, setPhone] = useState("");
+export default function EmailScreen() {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
-
-  const handleContinue = () => {
-    if (!/^[0-9]{10}$/.test(phone)) {
-      Alert.alert(
-        "Invalid number",
-        "Please enter a valid 10-digit phone number"
-      );
+  const handleContinue = async () => {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      Alert.alert("Invalid email", "Please enter a valid email");
       return;
     }
 
-    // later we’ll send OTP here
-    console.log("Phone Number Entered:", phone);
+    setLoading(true);
+    try {
+      // Call login endpoint to send OTP
+      console.log(email);
+      await api.post(API_ENDPOINTS.USERS.LOGIN, { email }, false);
 
-    // navigate to OTP page
-    router.push({
-      pathname: "/auth/otp",
-      params: { phone },
-    });
+      // Navigate to OTP page
+      router.push({
+        pathname: "/auth/wait",
+      });
+    } catch (error: any) {
+      Alert.alert(
+        "Error",
+        error.message || "Failed to send OTP. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Enter your phone number</Text>
+      <Text style={styles.title}>Enter your email</Text>
 
       <View style={styles.phoneContainer}>
-        <Text style={styles.prefix}>+91</Text>
         <TextInput
           mode="outlined"
-          placeholder="Enter phone number"
-          keyboardType="numeric"
-          value={phone}
-          onChangeText={setPhone}
+          placeholder="Enter email"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
           style={styles.input}
-          maxLength={10}
         />
       </View>
 
@@ -48,9 +54,15 @@ export default function PhoneNumberScreen() {
         onPress={handleContinue}
         style={styles.button}
         buttonColor="#4CAF50"
+        loading={loading}
+        disabled={loading}
       >
         Continue
       </Button>
+      <Text style={styles.signupBlock}>Don&apos;t have an account? </Text>
+      <Link style={styles.signupText} href="/auth/signup" replace>
+        Sign up
+      </Link>
     </View>
   );
 }
@@ -84,5 +96,14 @@ const styles = StyleSheet.create({
   button: {
     width: "100%",
     paddingVertical: 5,
+  },
+  signupBlock: {
+    marginTop: 20,
+    fontSize: 16,
+
+    color: "#666",
+  },
+  signupText: {
+    color: "blue",
   },
 });

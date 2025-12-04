@@ -1,48 +1,57 @@
-import { MaterialCommunityIcons } from "@expo/vector-icons"; // ✅ Import icons
+import { supabase } from "@/lib/supabase";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { StyleSheet } from "react-native";
+import { Button, StyleSheet, View } from "react-native";
 import { BottomNavigation } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Import your pages
-import StoresPage from "./index"; // Adjust path if needed
-import LiveOrdersPage from "./liveOrder"; // Adjust path if needed
+import StoresPage from "./dashboard";
+import LiveOrdersPage from "./liveOrder";
 
 const UserLayout = () => {
   const [index, setIndex] = useState(0);
+  const router = useRouter();
 
-  // Define routes for BottomNavigation
+  const handleLogout = async () => {
+    await supabase.auth.signOut(); // 1️⃣ logout from supabase
+    router.replace("/auth"); // 3️⃣ redirect to login
+  };
+
   const [routes] = useState([
     { key: "stores", title: "Stores", icon: "store" },
     { key: "liveOrders", title: "Live Orders", icon: "clipboard-list" },
   ]);
 
-  // Map routes to screens
   const renderScene = BottomNavigation.SceneMap({
     stores: StoresPage,
     liveOrders: LiveOrdersPage,
   });
 
-  // ✅ Use custom icon renderer so icons always show
   const renderIcon = ({ route, focused, color }) => {
-    const iconName = route.icon;
     return (
       <MaterialCommunityIcons
-        name={iconName}
+        name={route.icon}
         size={focused ? 26 : 24}
         color={color}
-        style={{ marginBottom: -2 }} // subtle alignment fix
+        style={{ marginBottom: -2 }}
       />
     );
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* ⭐ TEMP LOGOUT BUTTON */}
+      <View style={{ padding: 10 }}>
+        <Button title="Logout" color="#d9534f" onPress={handleLogout} />
+        <Button title="Wait Page" onPress={() => router.push("/auth/wait")} />
+      </View>
+
       <BottomNavigation
         navigationState={{ index, routes }}
         onIndexChange={setIndex}
         renderScene={renderScene}
-        renderIcon={renderIcon} // ✅ custom icon renderer
+        renderIcon={renderIcon}
         labeled={true}
         shifting={false}
         sceneAnimationEnabled={false}
@@ -61,9 +70,9 @@ const styles = StyleSheet.create({
   },
   bar: {
     backgroundColor: "#fff",
-    height: 70, // ✅ better visual balance (was 60)
-    paddingBottom: 5, // ✅ fixes bottom spacing issue
-    elevation: 8, // ✅ adds shadow on Android
+    height: 70,
+    paddingBottom: 5,
+    elevation: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,

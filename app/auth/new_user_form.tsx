@@ -1,32 +1,62 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
 import { Button, Menu } from "react-native-paper";
+
+import { api, API_ENDPOINTS } from "@/lib/api-client";
 
 export default function NewUserForm() {
   const router = useRouter();
+  const { phone: phoneParam } = useLocalSearchParams<{
+    phone?: string | string[];
+  }>();
+  const phone = Array.isArray(phoneParam)
+    ? phoneParam[0] ?? ""
+    : phoneParam ?? "";
 
   const [name, setName] = useState("");
   const [course, setCourse] = useState("");
   const [college, setCollege] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const [showCourseMenu, setShowCourseMenu] = useState(false);
   const [showCollegeMenu, setShowCollegeMenu] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name || !course || !college) {
-      alert("Please fill all fields");
+      Alert.alert("Validation Error", "Please fill all fields");
       return;
     }
 
-    console.log({
-      name,
-      course: course,
-      college: college,
-    });
+    if (!phone) {
+      Alert.alert("Error", "Phone number is missing. Please go back and try again.");
+      return;
+    }
 
-    alert("Form submitted successfully!");
-    router.push("/user");
+    setLoading(true);
+    try {
+      // Call signup endpoint
+      await api.post(
+        API_ENDPOINTS.USERS.SIGNUP,
+        {
+          name,
+          phone_no: phone,
+          course,
+          college,
+        },
+        false
+      );
+
+      Alert.alert("Success", "Profile completed successfully!");
+      router.replace("/user");
+    } catch (error: any) {
+      Alert.alert(
+        "Registration Failed",
+        error.message || "Failed to complete registration. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -98,6 +128,8 @@ export default function NewUserForm() {
         onPress={handleSubmit}
         style={styles.submitButton}
         buttonColor="#4CAF50"
+        loading={loading}
+        disabled={loading}
       >
         Submit
       </Button>
