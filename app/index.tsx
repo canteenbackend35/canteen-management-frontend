@@ -1,46 +1,39 @@
-import { supabase } from "@/lib/supabase";
+import { api, API_ENDPOINTS } from "@/lib/api-client";
 import { Redirect } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { useTheme } from "react-native-paper";
 
 export default function Index() {
   const [authState, setAuthState] = useState("checking");
-  // checking | redirectToUser | redirectToLogin
+  const theme = useTheme();
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      console.log(data);
-
-      if (!data.session) {
-        // Token existed locally but Supabase says the session is invalid
-        // → Clear invalid session and redirect to login
+      try {
+        await api.get(API_ENDPOINTS.USERS.PROFILE);
+        setAuthState("redirectToUser");
+      } catch {
+        console.log("No valid session found in cookies");
         setAuthState("redirectToLogin");
-        return;
       }
-
-      // 3️⃣ Session valid → redirect to /user
-      setAuthState("redirectToUser");
     };
 
     checkAuth();
   }, []);
 
-  // Show loading screen while checking
   if (authState === "checking") {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.loaderContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
-  // Logged in
   if (authState === "redirectToUser") {
     return <Redirect href="/user/dashboard" />;
   }
 
-  // Not logged in
   return <Redirect href="/auth" />;
 }
 

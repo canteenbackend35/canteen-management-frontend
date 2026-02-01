@@ -1,85 +1,68 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
+import { MD3DarkTheme, MD3LightTheme } from "react-native-paper";
 
-import { Platform } from "react-native";
-
-const tintColorLight = "#0a7ea4";
-const tintColorDark = "#fff";
-
-export const Colors = {
-  light: {
-    text: "#11181C",
-    background: "#fff",
-    tint: tintColorLight,
-    icon: "#687076",
-    tabIconDefault: "#687076",
-    tabIconSelected: tintColorLight,
-  },
-  dark: {
-    text: "#ECEDEE",
-    background: "#151718",
-    tint: tintColorDark,
-    icon: "#9BA1A6",
-    tabIconDefault: "#9BA1A6",
-    tabIconSelected: tintColorDark,
-  },
+// High-quality palette
+const colors = {
+  primary: "#4CAF50",
+  primaryDark: "#388E3C",
+  secondary: "#10B981",
+  error: "#DC2626",
+  warning: "#F59E0B",
+  info: "#3B82F6",
+  success: "#4CAF50",
 };
 
-export const Palette = {
-  background: "#f9fafb",
-  surface: "#ffffff",
-  textPrimary: "#111827",
-  textSecondary: "#555555",
-  primary: "#2563eb",
-  success: "#10b981",
-};
-
-export const Spacing = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
-  xxl: 32,
-};
-
-export const Radii = {
-  sm: 6,
-  md: 10,
-  lg: 16,
-};
-
-export const Typography = {
-  title: 24,
-  body: 16,
-  button: 16,
-  subtitle: 14,
-};
-
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: "system-ui",
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: "ui-serif",
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: "ui-rounded",
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: "ui-monospace",
+export const lightTheme = {
+  ...MD3LightTheme,
+  colors: {
+    ...MD3LightTheme.colors,
+    primary: colors.primary,
+    secondary: colors.secondary,
+    error: colors.error,
+    surface: "#FFFFFF",
+    background: "#F9FAFB",
+    onSurface: "#111827",
+    onSurfaceVariant: "#6B7280",
+    outline: "#E5E7EB",
+    surfaceVariant: "#F3F4F6",
   },
-  default: {
-    sans: "normal",
-    serif: "serif",
-    rounded: "normal",
-    mono: "monospace",
+  custom: {
+    success: colors.success,
+    warning: colors.warning,
+    info: colors.info,
+    cardShadow: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 10,
+      elevation: 2,
+    }
+  }
+};
+
+export const darkTheme = {
+  ...MD3DarkTheme,
+  colors: {
+    ...MD3DarkTheme.colors,
+    primary: colors.primary,
+    secondary: colors.secondary,
+    error: colors.error,
+    surface: "#111827",
+    background: "#030712",
+    onSurface: "#F9FAFB",
+    onSurfaceVariant: "#9CA3AF",
+    outline: "#374151",
+    surfaceVariant: "#1F2937",
   },
-  web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded:
-      "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-  },
-});
+  custom: {
+    success: colors.success,
+    warning: colors.warning,
+    info: colors.info,
+    cardShadow: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 20,
+      elevation: 4,
+    }
+  }
+};

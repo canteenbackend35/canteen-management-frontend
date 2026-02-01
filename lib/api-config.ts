@@ -1,58 +1,41 @@
-/**
- * API Configuration
- *
- * To switch between localhost and production:
- * - For localhost: Set BASE_URL to 'http://localhost:PORT' or 'http://YOUR_IP:PORT'
- * - For production: Set BASE_URL to your deployed backend URL
- *
- * Note: For Android emulator, use 'http://10.0.2.2:PORT' instead of 'localhost'
- *       For iOS simulator, use 'http://localhost:PORT'
- *       For physical devices, use your computer's local IP address
- */
+const BASE_URL = "http://localhost:3000"; // Change port as needed
 
-// Change this to switch between development and production
-const IS_DEVELOPMENT = true;
-
-// Development URL (localhost)
-const DEV_BASE_URL = "http://10.187.228.224:3000"; // Change port as needed
-
-// Production URL (deployed backend)
-const PROD_BASE_URL = "https://your-backend-domain.com"; // Replace with your deployed URL
-
-/**
- * Base URL for API requests
- */
-export const BASE_URL = IS_DEVELOPMENT ? DEV_BASE_URL : PROD_BASE_URL;
-
-/**
- * API endpoints - Based on backend OpenAPI spec
- */
 export const API_ENDPOINTS = {
-  // User endpoints
+  // 1. User (Customer) API - /api/users
   USERS: {
-    SIGNUP: "/users/signup",
-    LOGIN: "/users/login",
-    ORDERS: "/users/orders",
+    SEND_OTP: "/api/users/send-otp",
+    VERIFY_OTP: "/api/users/verify-otp",
+    SIGNUP: "/api/users/signup",
+    LOGIN: "/api/users/login",
+    REFRESH: "/api/users/refresh",
+    PROFILE: "/api/users/profile",
+    ORDERS: "/api/users/orders",
   },
-  // Store endpoints
+  // 2. Store API - /api/stores
   STORES: {
-    SIGNUP: "/stores/signup",
-    LOGIN: "/stores/login",
-    LIST: "/stores",
-    ORDERS: (storeId: number | string) => `/stores/${storeId}/orders`,
+    LIST: "/api/stores",
+    MENU: (storeId: number | string) => `/api/stores/${storeId}/menu`,
+    SEND_OTP: "/api/stores/send-otp",
+    VERIFY_OTP: "/api/stores/verify-otp",
+    SIGNUP: "/api/stores/signup",
+    LOGIN: "/api/stores/login",
+    PROFILE: "/api/stores/profile",
+    ORDERS: "/api/stores/orders",
   },
-  // Menu Item endpoints
-  MENU: {
-    GET_STORE_MENU: (storeId: number | string) => `/stores/${storeId}/menu`,
-    CREATE_ITEM: (storeId: number | string) => `/item/${storeId}`,
-    UPDATE_ITEM: (itemId: number | string) => `/item/${itemId}`,
-    DELETE_ITEM: (itemId: number | string) => `/item/${itemId}`,
-  },
-  // Order endpoints
+  // 3. Order API - /api/orders
   ORDERS: {
-    CREATE: "/orders",
-    DETAILS: (orderId: number | string) => `/orders/${orderId}`,
-    STATUS: (orderId: number | string) => `/orders/${orderId}/status`,
+    CREATE: "/api/orders",
+    DETAILS: (orderId: number | string) => `/api/orders/${orderId}`,
+    STATUS: (orderId: number | string) => `/api/orders/${orderId}/status`,
+    VERIFY: (orderId: number | string) => `/api/orders/${orderId}/verify`,
+    COMPLETE: (orderId: number | string) => `/api/orders/${orderId}/complete`,
+    CANCEL: (orderId: number | string) => `/api/orders/${orderId}/cancel`,
+  },
+  // 4. Menu Management - /api/menu
+  MENU_MGMT: {
+    CREATE: "/api/menu",
+    UPDATE: (itemId: number | string) => `/api/menu/${itemId}`,
+    DELETE: (itemId: number | string) => `/api/menu/${itemId}`,
   },
 } as const;
 
@@ -65,11 +48,4 @@ export function getApiUrl(endpoint: string): string {
   // Remove leading slash if present to avoid double slashes
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
   return `${BASE_URL}/${cleanEndpoint}`;
-}
-
-/**
- * Helper function to check if we're in development mode
- */
-export function isDevelopment(): boolean {
-  return IS_DEVELOPMENT;
 }

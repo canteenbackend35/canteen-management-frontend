@@ -1,30 +1,7 @@
-import { getApiUrl } from "./api-config";
-import { supabase } from "./supabase";
+import { API_ENDPOINTS, getApiUrl } from "./api-config";
+
 /**
- * API Client utility for making HTTP requests
- *
- * Usage examples:
- *
- * // User login (sends OTP)
- * const loginResponse = await api.post(API_ENDPOINTS.USERS.LOGIN, { phone_no: "9876543210" }, false);
- *
- * // Validate OTP
- * const otpResult = await api.post(API_ENDPOINTS.USERS.VALIDATE_OTP, { phoneNo: "9876543210", otp: "123456" }, false);
- *
- * // User signup
- * const signupResponse = await api.post(API_ENDPOINTS.USERS.SIGNUP, { name: "John", phone_no: "9876543210", course: "B.Tech", college: "IIT" }, false);
- *
- * // Get all stores (public)
- * const stores = await api.get(API_ENDPOINTS.STORES.LIST, false);
- *
- * // Get store menu
- * const menu = await api.get(API_ENDPOINTS.MENU.GET_STORE_MENU(1), false);
- *
- * // Get user orders (requires auth)
- * const orders = await api.get(API_ENDPOINTS.USERS.ORDERS(123));
- *
- * // Create order (requires auth)
- * const newOrder = await api.post(API_ENDPOINTS.ORDERS.CREATE, { customer_id: 1, store_id: 1, items: [...] });
+ * API Client utility for making HTTP requests with Gold Standard Security (HttpOnly Cookies)
  */
 
 type RequestMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -36,9 +13,11 @@ interface RequestOptions {
   requiresAuth?: boolean;
 }
 
+let isRefreshing = false;
+
 /**
- * Make an API request
- * @param endpoint - API endpoint (e.g., API_ENDPOINTS.AUTH.VERIFY_OTP)
+ * Make an API request with automatic token refresh on 401 via Cookies
+ * @param endpoint - API endpoint
  * @param options - Request options
  * @returns Promise with response data
  */
@@ -48,45 +27,63 @@ export async function apiRequest<T = any>(
 ): Promise<T> {
   const { method = "GET", body, headers = {}, requiresAuth = true } = options;
 
-  // Build full URL
   const url = getApiUrl(endpoint);
 
-  // Prepare headers
-  const requestHeaders: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...headers,
-  };
-
-  // Add auth token if required
-  if (requiresAuth) {
-    const { data, error } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    console.log("Auth token:", token);
-    if (token) {
-      requestHeaders.Authorization = `Bearer ${token}`;
-    }
-  }
-
-  // Prepare request config
   const config: RequestInit = {
     method,
-    headers: requestHeaders,
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+    },
+    // 🔥 Gold Standard: Send cookies with every request
+    credentials: "include", 
   };
 
-  // Add body for POST/PUT/PATCH requests
   if (body && ["POST", "PUT", "PATCH"].includes(method)) {
     config.body = JSON.stringify(body);
   }
 
   try {
-    const response = await fetch(url, config);
+    let response = await fetch(url, config);
 
-    // Parse response
-    const data = await response.json();
+    // 1. Handle 401 Unauthorized (Expired Session)
+    if (response.status === 401 && requiresAuth && !isRefreshing) {
+      console.log("Session expired or 401 received, attempting refresh via cookies...");
+      isRefreshing = true;
 
-    // Handle errors
+      try {
+        // Call backend refresh endpoint (browser sends refreshToken cookie automatically)
+        const refreshResponse = await fetch(getApiUrl(API_ENDPOINTS.USERS.REFRESH), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
+
+        if (refreshResponse.ok) {
+          console.log("Session refreshed successfully, retrying original request...");
+          // Retry original request (browser now has the new accessToken cookie)
+          response = await fetch(url, config);
+        } else {
+          console.error("Refresh failed, redirecting to login...");
+          // You might want to trigger a global logout state here
+          throw new Error("Session expired. Please login again.");
+        }
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    // 2. Handle non-JSON responses (like 404 HTML pages)
+    const contentType = response.headers.get("content-type");
+    let data;
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+    } else {
+      data = { error: `Request failed with status ${response.status}` };
+    }
+
     if (!response.ok) {
-      throw new Error(data.message || `API Error: ${response.statusText}`);
+      throw new Error(data?.UImessage || data?.error || `Request failed with status ${response.status}`);
     }
 
     return data;
@@ -116,5 +113,4 @@ export const api = {
     apiRequest<T>(endpoint, { method: "DELETE", requiresAuth }),
 };
 
-// Export API_ENDPOINTS for convenience
 export { API_ENDPOINTS } from "./api-config";

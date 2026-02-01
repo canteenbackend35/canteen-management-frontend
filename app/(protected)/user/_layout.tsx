@@ -1,9 +1,8 @@
-import { supabase } from "@/lib/supabase";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Button, StyleSheet, View } from "react-native";
-import { BottomNavigation } from "react-native-paper";
+import { StyleSheet } from "react-native";
+import { Appbar, BottomNavigation, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import StoresPage from "./dashboard";
@@ -11,16 +10,22 @@ import LiveOrdersPage from "./liveOrder";
 
 const UserLayout = () => {
   const [index, setIndex] = useState(0);
+  const theme = useTheme();
   const router = useRouter();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut(); // 1️⃣ logout from supabase
-    router.replace("/auth"); // 3️⃣ redirect to login
+    try {
+      // Assuming a logout endpoint or just clearing local session
+      // For now, redirect to auth
+      router.replace("/auth");
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
   };
 
   const [routes] = useState([
     { key: "stores", title: "Stores", icon: "store" },
-    { key: "liveOrders", title: "Live Orders", icon: "clipboard-list" },
+    { key: "liveOrders", title: "Orders", icon: "clipboard-list" },
   ]);
 
   const renderScene = BottomNavigation.SceneMap({
@@ -28,24 +33,30 @@ const UserLayout = () => {
     liveOrders: LiveOrdersPage,
   });
 
-  const renderIcon = ({ route, focused, color }) => {
+  const renderIcon = ({
+    route,
+    focused,
+    color,
+  }: {
+    route: { icon: string };
+    focused: boolean;
+    color: string;
+  }) => {
     return (
       <MaterialCommunityIcons
-        name={route.icon}
-        size={focused ? 26 : 24}
+        name={route.icon as any}
+        size={24}
         color={color}
-        style={{ marginBottom: -2 }}
       />
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* ⭐ TEMP LOGOUT BUTTON */}
-      <View style={{ padding: 10 }}>
-        <Button title="Logout" color="#d9534f" onPress={handleLogout} />
-        <Button title="Wait Page" onPress={() => router.push("/auth/wait")} />
-      </View>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top"]}>
+      <Appbar.Header style={{ backgroundColor: theme.colors.surface }} elevated={false}>
+        <Appbar.Content title="Canteen" titleStyle={[styles.logo, { color: theme.colors.primary }]} />
+        <Appbar.Action icon="logout" onPress={handleLogout} iconColor={theme.colors.onSurfaceVariant} />
+      </Appbar.Header>
 
       <BottomNavigation
         navigationState={{ index, routes }}
@@ -54,10 +65,11 @@ const UserLayout = () => {
         renderIcon={renderIcon}
         labeled={true}
         shifting={false}
-        sceneAnimationEnabled={false}
-        barStyle={styles.bar}
-        activeColor="#007AFF"
-        inactiveColor="#999"
+        sceneAnimationEnabled={true}
+        barStyle={[styles.bar, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.outline }]}
+        activeColor={theme.colors.primary}
+        inactiveColor={theme.colors.onSurfaceVariant}
+        activeIndicatorStyle={{ backgroundColor: theme.colors.secondaryContainer }}
       />
     </SafeAreaView>
   );
@@ -66,17 +78,15 @@ const UserLayout = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f9f9f9",
+  },
+  logo: {
+    fontWeight: "900",
+    fontSize: 24,
+    letterSpacing: -0.5,
   },
   bar: {
-    backgroundColor: "#fff",
     height: 70,
-    paddingBottom: 5,
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderTopWidth: 0.5,
   },
 });
 
