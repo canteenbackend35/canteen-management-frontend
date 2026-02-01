@@ -1,6 +1,6 @@
 // 🚀 Toggle this for Production vs Development
 const DEV_URL = "http://localhost:3000";
-const PROD_URL = "https://your-production-backend.com"; // ⬅️ Replace with your live backend URL
+const PROD_URL = "https://canteen-management-backend-5qxg.onrender.com"; // ⬅️ Replace with your live backend URL
 
 const BASE_URL = __DEV__ ? DEV_URL : PROD_URL;
 
