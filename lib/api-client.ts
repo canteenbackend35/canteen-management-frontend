@@ -28,6 +28,7 @@ export async function apiRequest<T = any>(
   const { method = "GET", body, headers = {}, requiresAuth = true } = options;
 
   const url = getApiUrl(endpoint);
+  if(__DEV__) console.log(`📡 [${method}] Requesting: ${url}`);
 
   const config: RequestInit = {
     method,

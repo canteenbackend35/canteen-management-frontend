@@ -13,6 +13,7 @@ type Order = {
   payment_id?: string;
   order_status: string;
   order_date: string;
+  order_otp?: string;
 };
 
 const LiveOrdersPage = () => {
@@ -84,6 +85,13 @@ const LiveOrdersPage = () => {
               {new Date(item.order_date).toLocaleDateString()} at {new Date(item.order_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Text>
           </View>
+
+          {item.order_otp && item.order_status !== 'DELIVERED' && item.order_status !== 'CANCELLED' && (
+            <View style={[styles.otpContainer, { backgroundColor: theme.colors.primaryContainer + '40', borderColor: theme.colors.primary + '30' }]}>
+              <Text style={[styles.otpLabel, { color: theme.colors.onSurfaceVariant }]}>OTP:</Text>
+              <Text style={[styles.otpValue, { color: theme.colors.primary }]}>{item.order_otp}</Text>
+            </View>
+          )}
         </Card.Content>
       </Card>
     );
@@ -203,6 +211,26 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 13,
     fontWeight: "500",
+  },
+  otpContainer: {
+    marginTop: 14,
+    padding: 12,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+  },
+  otpLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  otpValue: {
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 2,
   },
   listContent: {
     padding: 20,

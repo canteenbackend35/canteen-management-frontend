@@ -4,6 +4,11 @@ const PROD_URL = "https://canteen-management-backend-5qxg.onrender.com"; // ⬅�
 
 const BASE_URL = __DEV__ ? DEV_URL : PROD_URL;
 
+console.log("🛠️ API Environment:", __DEV__ ? "DEVELOPMENT" : "PRODUCTION");
+console.log("🔗 API Base URL:", BASE_URL);
+
+
+
 export const API_ENDPOINTS = {
   // 1. User (Customer) API - /api/users
   USERS: {
