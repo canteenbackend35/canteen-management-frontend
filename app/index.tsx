@@ -11,8 +11,16 @@ export default function Index() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        await api.get(API_ENDPOINTS.USERS.PROFILE);
-        setAuthState("redirectToUser");
+        const response = await api.get(API_ENDPOINTS.AUTH.ME);
+        
+        // Match backend structure: { success: true, role, user }
+        const isStore = response.role === 'store' || (response.user && response.user.store_id);
+
+        if (isStore) {
+          setAuthState("redirectToStore");
+        } else {
+          setAuthState("redirectToUser");
+        }
       } catch {
         console.log("No valid session found in cookies");
         setAuthState("redirectToLogin");
@@ -30,8 +38,12 @@ export default function Index() {
     );
   }
 
+  if (authState === "redirectToStore") {
+    return <Redirect href="/(protected)/store/kitchen" />;
+  }
+
   if (authState === "redirectToUser") {
-    return <Redirect href="/user/dashboard" />;
+    return <Redirect href="/(protected)/user/stores" />;
   }
 
   return <Redirect href="/auth" />;

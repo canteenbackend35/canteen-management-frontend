@@ -6,6 +6,7 @@ import { Button, TextInput, useTheme } from "react-native-paper";
 
 export default function LoginScreen() {
   const [phone, setPhone] = useState("");
+  const [role, setRole] = useState<"customer" | "store">("customer");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const router = useRouter();
@@ -21,13 +22,13 @@ export default function LoginScreen() {
     setLoading(true);
     setErrorMsg(null);
     try {
-      console.log("Sending OTP request to:", API_ENDPOINTS.USERS.LOGIN, "with phone:", phone);
+      console.log("Sending login request to:", API_ENDPOINTS.AUTH.LOGIN, "with phone:", phone, "role:", role);
       const response = await api.post(
-        API_ENDPOINTS.USERS.LOGIN,
-        { phone_no: phone },
+        API_ENDPOINTS.AUTH.LOGIN,
+        { phoneNo: phone, role: role },
         false
       );
-      console.log("OTP Response received:", response);
+      console.log("Login Response received:", response);
 
       if (!response.success) {
         // If not successful and it's a 404 (user not found), redirect to signup
@@ -39,13 +40,13 @@ export default function LoginScreen() {
         throw new Error(response.UImessage || "Failed to send OTP");
       }
 
-      console.log("Navigating to /auth/wait with phone:", phone, "and reqId:", response.reqId);
+      console.log("Navigating to /auth/wait with phone:", phone, "reqId:", response.reqId, "role:", role);
       router.push({
         pathname: "/auth/wait",
-        params: { phone, reqId: response.reqId },
+        params: { phone, reqId: response.reqId, role },
       });
     } catch (error: any) {
-      console.error("OTP Request failed:", error);
+      console.error("Login Request failed:", error);
       setErrorMsg(error.message || "Failed to send OTP. Please try again.");
     } finally {
       setLoading(false);
@@ -65,7 +66,26 @@ export default function LoginScreen() {
 
         <View style={styles.formContainer}>
           <Text style={[styles.title, { color: theme.colors.onSurface }]}>Welcome Back</Text>
-          <Text style={[styles.subtitle, { color: theme.colors.onSurfaceVariant }]}>Enter your mobile number to continue</Text>
+          <Text style={[styles.subtitle, { color: theme.colors.onSurfaceVariant }]}>Choose your role and enter mobile number</Text>
+
+          <View style={styles.roleContainer}>
+            <Button 
+              mode={role === "customer" ? "contained" : "outlined"} 
+              onPress={() => setRole("customer")}
+              style={styles.roleButton}
+              labelStyle={styles.roleButtonLabel}
+            >
+              Customer
+            </Button>
+            <Button 
+              mode={role === "store" ? "contained" : "outlined"} 
+              onPress={() => setRole("store")}
+              style={styles.roleButton}
+              labelStyle={styles.roleButtonLabel}
+            >
+              Store
+            </Button>
+          </View>
 
           <View style={styles.phoneInputRow}>
             <View style={[styles.prefixBox, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}>
@@ -128,22 +148,22 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     justifyContent: "space-between",
-    paddingVertical: 60,
+    paddingVertical: 40,
   },
   headerContainer: {
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 10,
   },
   brandTitle: {
-    fontSize: 48,
+    fontSize: 36,
     fontWeight: "900",
-    letterSpacing: -2,
+    letterSpacing: -1.5,
   },
   brandSubtitle: {
-    fontSize: 16,
-    marginTop: 4,
+    fontSize: 14,
+    marginTop: 2,
     fontWeight: "600",
   },
   formContainer: {
@@ -151,15 +171,28 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   title: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: "900",
-    marginBottom: 8,
-    letterSpacing: -1,
+    marginBottom: 6,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: "500",
-    marginBottom: 32,
+    marginBottom: 16,
+  },
+  roleContainer: {
+    flexDirection: 'row',
+    marginBottom: 24,
+    gap: 12,
+  },
+  roleButton: {
+    flex: 1,
+    borderRadius: 12,
+  },
+  roleButtonLabel: {
+    fontWeight: '700',
+    fontSize: 15,
   },
   phoneInputRow: {
     flexDirection: "row",
@@ -167,13 +200,13 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   prefixBox: {
-    height: 56,
-    width: 64,
+    height: 50,
+    width: 60,
     borderRadius: 12,
     borderWidth: 1.5,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 10,
     marginTop: 6,
   },
   prefixText: {
@@ -195,11 +228,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   button: {
-    borderRadius: 16,
+    borderRadius: 12,
     elevation: 0,
   },
   buttonContent: {
-    height: 56,
+    height: 50,
   },
   signupContainer: {
     flexDirection: "row",

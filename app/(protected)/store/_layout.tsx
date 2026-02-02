@@ -6,11 +6,12 @@ import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Appbar, BottomNavigation, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import HistoryPage from "./history";
-import OrdersPage from "./orders";
-import StoresPage from "./stores";
+import StoreHistoryPage from "./history";
+import StoreKitchenView from "./kitchen";
+import StoreMenuPage from "./menu";
+import StoreProfilePage from "./profile";
 
-const UserLayout = () => {
+const StoreLayout = () => {
   const [index, setIndex] = useState(0);
   const theme = useTheme();
   const router = useRouter();
@@ -22,8 +23,8 @@ const UserLayout = () => {
         const response = await api.get(API_ENDPOINTS.AUTH.ME);
         const isStore = response.role === 'store' || (response.user && response.user.store_id);
 
-        if (isStore) {
-          router.replace("/(protected)/store/kitchen");
+        if (!isStore) {
+          router.replace("/(protected)/user/stores");
         } else {
           setChecking(false);
         }
@@ -35,32 +36,18 @@ const UserLayout = () => {
   }, []);
 
   const [routes] = useState([
-    { key: "stores", title: "Stores", icon: "store" },
-    { key: "liveOrders", title: "Orders", icon: "clipboard-list" },
+    { key: "orders", title: "Orders", icon: "clipboard-list" },
+    { key: "menu", title: "Menu", icon: "food-fork-drink" },
     { key: "history", title: "History", icon: "history" },
+    { key: "profile", title: "Profile", icon: "store-cog" },
   ]);
 
   const renderScene = BottomNavigation.SceneMap({
-    stores: StoresPage,
-    liveOrders: OrdersPage,
-    history: HistoryPage,
+    orders: StoreKitchenView,
+    menu: StoreMenuPage,
+    history: StoreHistoryPage,
+    profile: StoreProfilePage,
   });
-
-  if (checking) {
-    return (
-      <View style={[styles.loaderContainer, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
-
-  const handleLogout = async () => {
-    try {
-      router.replace("/auth");
-    } catch (err) {
-      console.error("Logout failed", err);
-    }
-  };
 
   const renderIcon = ({
     route,
@@ -80,11 +67,22 @@ const UserLayout = () => {
     );
   };
 
+  if (checking) {
+    return (
+      <View style={[styles.loaderContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
+
+  const handleLogout = () => {
+    router.replace("/auth");
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top"]}>
       <Appbar.Header style={{ backgroundColor: theme.colors.surface, height: 56, borderBottomWidth: 1, borderBottomColor: theme.colors.outline }} elevated={false}>
-        <Appbar.Content title="Canteen" titleStyle={[styles.logo, { color: theme.colors.primary }]} />
-        <Appbar.Action icon="bell-outline" onPress={() => {}} iconColor={theme.colors.onSurfaceVariant} />
+        <Appbar.Content title="Store Panel" titleStyle={[styles.logo, { color: theme.colors.primary }]} />
         <Appbar.Action icon="logout" onPress={handleLogout} iconColor={theme.colors.onSurfaceVariant} />
       </Appbar.Header>
 
@@ -125,4 +123,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default UserLayout;
+export default StoreLayout;

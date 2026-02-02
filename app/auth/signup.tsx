@@ -54,13 +54,14 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       const payload = { 
+        phoneNo: phone,
+        role: "customer",
         name, 
         email, 
-        phoneNo: phone,
         college,
         course
       }; 
-      const response = await api.post(API_ENDPOINTS.USERS.SIGNUP, payload, false);
+      const response = await api.post(API_ENDPOINTS.AUTH.SIGNUP, payload, false);
 
       if (!response.success) {
         throw new Error(response.UImessage || "Signup failed");
@@ -223,20 +224,20 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   title: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: "900",
-    marginBottom: 8,
-    letterSpacing: -1,
+    marginBottom: 4,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
   },
   form: {
     width: "100%",
   },
   input: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   phoneInputRow: {
     flexDirection: "row",
@@ -244,13 +245,13 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   prefixBox: {
-    height: 56,
-    width: 64,
+    height: 50,
+    width: 60,
     borderRadius: 12,
     borderWidth: 1.5,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 10,
     marginTop: 6,
   },
   prefixText: {
@@ -272,11 +273,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   button: {
-    borderRadius: 16,
+    borderRadius: 12,
     elevation: 0,
   },
   buttonContent: {
-    height: 56,
+    height: 50,
   },
   loginContainer: {
     flexDirection: "row",

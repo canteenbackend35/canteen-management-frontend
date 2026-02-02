@@ -54,7 +54,7 @@ export async function apiRequest<T = any>(
 
       try {
         // Call backend refresh endpoint (browser sends refreshToken cookie automatically)
-        const refreshResponse = await fetch(getApiUrl(API_ENDPOINTS.USERS.REFRESH), {
+        const refreshResponse = await fetch(getApiUrl(API_ENDPOINTS.AUTH.REFRESH), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",

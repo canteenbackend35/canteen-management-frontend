@@ -6,7 +6,7 @@ import { OtpInput } from "react-native-otp-entry";
 import { Button, useTheme } from "react-native-paper";
 
 export default function OTPVerificationScreen() {
-  const { phone, reqId: initialReqId } = useLocalSearchParams<{ phone: string; reqId: string }>();
+  const { phone, reqId: initialReqId, role } = useLocalSearchParams<{ phone: string; reqId: string; role: string }>();
   const [currentReqId, setCurrentReqId] = useState(initialReqId);
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,11 +27,12 @@ export default function OTPVerificationScreen() {
     try {
       console.log("Verifying OTP for:", phone, "with reqId:", currentReqId);
       const response = await api.post(
-        API_ENDPOINTS.USERS.VERIFY_OTP,
+        API_ENDPOINTS.AUTH.VERIFY_OTP,
         {
           phoneNo: phone,
           otp: otp,
           reqId: currentReqId,
+          role: role,
         },
         false
       );
@@ -42,7 +43,16 @@ export default function OTPVerificationScreen() {
         throw new Error(response.UImessage || "Invalid OTP");
       }
 
-      // 🔥 Gold Standard: Cookies are set by backend automatically
+      // 🔥 Spec Alignment: Handle new user registration flow
+      if (response.user_type === "new user") {
+        router.push({
+          pathname: "/auth/signup",
+          params: { phone, role }
+        });
+        return;
+      }
+
+      // 🔥 Gold Standard: Cookies are set by backend automatically for existing users
       router.replace("/");
     } catch (err: any) {
       setErrorMsg(err.message || "Invalid OTP. Please try again.");
@@ -57,7 +67,7 @@ export default function OTPVerificationScreen() {
     try {
       console.log("Resending OTP for:", phone);
       const response = await api.post(
-        API_ENDPOINTS.USERS.SEND_OTP,
+        API_ENDPOINTS.AUTH.SEND_OTP,
         { phoneNo: phone },
         false
       );
@@ -169,13 +179,13 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   title: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: "700",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 20,
   },
   phoneText: {
     fontWeight: "600",
@@ -188,13 +198,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   pinCodeContainer: {
-    width: 48,
-    height: 56,
-    borderRadius: 14,
+    width: 44,
+    height: 50,
+    borderRadius: 12,
     borderWidth: 1.5,
   },
   pinCodeText: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "800",
   },
   focusStick: {
@@ -215,7 +225,7 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   buttonContent: {
-    height: 54,
+    height: 50,
   },
   resendContainer: {
     flexDirection: "row",

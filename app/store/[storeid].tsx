@@ -234,13 +234,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   itemName: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "700",
   },
   itemPrice: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "500",
-    marginTop: 4,
+    marginTop: 2,
   },
   divider: {
     height: 1,
@@ -258,14 +258,14 @@ const styles = StyleSheet.create({
   quantityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 4,
-    height: 44,
+    height: 38,
   },
   quantityBtn: {
     margin: 0,
-    width: 34,
-    height: 34,
+    width: 30,
+    height: 30,
   },
   quantityText: {
     fontSize: 16,
@@ -298,10 +298,10 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   conflictBanner: {
-    margin: 16,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    padding: 16,
+    margin: 12,
+    borderRadius: 12,
+    borderWidth: 1.2,
+    padding: 12,
     flexDirection: 'row',
   },
   bannerIcon: {

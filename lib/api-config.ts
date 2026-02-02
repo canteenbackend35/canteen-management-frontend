@@ -10,28 +10,26 @@ console.log("🔗 API Base URL:", BASE_URL);
 
 
 export const API_ENDPOINTS = {
-  // 1. User (Customer) API - /api/users
+  // 1. Unified Auth API - /api/auth (NEW STRUCTURE)
+  AUTH: {
+    SEND_OTP: "/api/auth/send-otp",
+    VERIFY_OTP: "/api/auth/verify-otp",
+    SIGNUP: "/api/auth/signup",
+    LOGIN: "/api/auth/login",
+    REFRESH: "/api/auth/refresh",
+    ME: "/api/auth/me",
+  },
+  // 2. User (Customer) Business Logic - /api/users
   USERS: {
-    SEND_OTP: "/api/users/send-otp",
-    VERIFY_OTP: "/api/users/verify-otp",
-    SIGNUP: "/api/users/signup",
-    LOGIN: "/api/users/login",
-    REFRESH: "/api/users/refresh",
-    PROFILE: "/api/users/profile",
     ORDERS: "/api/users/orders",
   },
-  // 2. Store API - /api/stores
+  // 3. Store Business Logic - /api/stores
   STORES: {
     LIST: "/api/stores",
     MENU: (storeId: number | string) => `/api/stores/${storeId}/menu`,
-    SEND_OTP: "/api/stores/send-otp",
-    VERIFY_OTP: "/api/stores/verify-otp",
-    SIGNUP: "/api/stores/signup",
-    LOGIN: "/api/stores/login",
-    PROFILE: "/api/stores/profile",
     ORDERS: "/api/stores/orders",
   },
-  // 3. Order API - /api/orders
+  // 4. Order API - /api/orders
   ORDERS: {
     CREATE: "/api/orders",
     DETAILS: (orderId: number | string) => `/api/orders/${orderId}`,
@@ -40,7 +38,7 @@ export const API_ENDPOINTS = {
     COMPLETE: (orderId: number | string) => `/api/orders/${orderId}/complete`,
     CANCEL: (orderId: number | string) => `/api/orders/${orderId}/cancel`,
   },
-  // 4. Menu Management - /api/menu
+  // 5. Menu Management - /api/menu
   MENU_MGMT: {
     CREATE: "/api/menu",
     UPDATE: (itemId: number | string) => `/api/menu/${itemId}`,

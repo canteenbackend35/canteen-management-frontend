@@ -43,7 +43,7 @@ export default function PaymentScreen() {
           [
             { 
               text: "OK", 
-              onPress: () => router.replace('/(protected)/user/dashboard') 
+              onPress: () => router.replace('/(protected)/user/stores') 
             }
           ]
         );
@@ -130,34 +130,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
-    paddingBottom: 10,
+    paddingTop: 45,
+    paddingBottom: 12,
     borderBottomWidth: 1,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: -0.5,
   },
   scroll: {
     padding: 16,
-    paddingBottom: 140,
+    paddingBottom: 160,
   },
   card: {
-    borderRadius: 20,
+    borderRadius: 16,
     marginBottom: 20,
     borderWidth: 1,
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 14,
     fontWeight: '800',
     marginBottom: 16,
+    textTransform: 'uppercase',
+    opacity: 0.6,
   },
   listItem: {
     paddingHorizontal: 0,
   },
   itemPrice: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     alignSelf: 'center',
   },
   totalRow: {
@@ -167,47 +170,33 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   totalLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    opacity: 0.6,
   },
   totalValue: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '900',
-  },
-  paymentOption: {
-    marginTop: 8,
-  },
-  radioRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  radioLabel: {
-    marginLeft: 12,
-  },
-  radioTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  radioSub: {
-    fontSize: 14,
-    marginTop: 2,
   },
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 24,
-    paddingBottom: 40,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    padding: 16,
+    paddingBottom: 32,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxWidth: 600,
+    alignSelf: 'center',
+    width: '100%',
   },
   placeOrderBtn: {
-    borderRadius: 16,
+    borderRadius: 14,
   },
   placeOrderBtnContent: {
-    height: 56,
+    height: 52,
   },
 });
 

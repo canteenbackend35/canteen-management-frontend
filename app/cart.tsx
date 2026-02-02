@@ -16,7 +16,7 @@ export default function CartScreen() {
         <Text style={[styles.emptyText, { color: theme.colors.onSurfaceVariant }]}>Your cart is empty</Text>
         <Button 
           mode="contained" 
-          onPress={() => router.replace('/(protected)/user/dashboard')}
+          onPress={() => router.replace('/(protected)/user/stores')}
           style={styles.browseButton}
           buttonColor={theme.colors.primary}
         >
@@ -99,14 +99,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
-    paddingBottom: 10,
+    paddingTop: 45,
+    paddingBottom: 12,
     paddingHorizontal: 8,
     borderBottomWidth: 1,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: -0.5,
   },
   emptyContainer: {
     flex: 1,
@@ -116,19 +117,19 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: '800',
     marginBottom: 24,
     marginTop: 8,
   },
   browseButton: {
-    borderRadius: 14,
-    paddingHorizontal: 20,
+    borderRadius: 12,
+    paddingHorizontal: 24,
   },
   list: {
-    paddingBottom: 140,
+    paddingBottom: 160,
   },
   itemName: {
-    fontWeight: '700',
+    fontWeight: '800',
     fontSize: 17,
   },
   quantityRow: {
@@ -143,17 +144,20 @@ const styles = StyleSheet.create({
   qtyText: {
     marginHorizontal: 12,
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 24,
-    paddingBottom: 40,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    padding: 16,
+    paddingBottom: 32,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxWidth: 600,
+    alignSelf: 'center',
+    width: '100%',
   },
   totalRow: {
     flexDirection: 'row',
@@ -162,18 +166,20 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   totalLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    opacity: 0.6,
   },
   totalValue: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '900',
   },
   checkoutBtn: {
-    borderRadius: 16,
+    borderRadius: 14,
   },
   checkoutBtnContent: {
-    height: 56,
+    height: 52,
   },
 });
 

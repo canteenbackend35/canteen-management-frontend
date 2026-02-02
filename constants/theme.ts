@@ -11,6 +11,24 @@ const colors = {
   success: "#4CAF50",
 };
 
+// Standardized layout tokens
+const layout = {
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 16,
+    lg: 24,
+    xl: 32,
+  },
+  radius: {
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 24,
+    full: 999,
+  }
+};
+
 export const lightTheme = {
   ...MD3LightTheme,
   colors: {
@@ -24,11 +42,21 @@ export const lightTheme = {
     onSurfaceVariant: "#6B7280",
     outline: "#E5E7EB",
     surfaceVariant: "#F3F4F6",
+    elevation: {
+      level0: 'transparent',
+      level1: '#FFFFFF',
+      level2: '#F9FAFB',
+      level3: '#F3F4F6',
+      level4: '#E5E7EB',
+      level5: '#D1D5DB',
+    }
   },
+  roundness: layout.radius.md,
   custom: {
     success: colors.success,
     warning: colors.warning,
     info: colors.info,
+    layout: layout,
     cardShadow: {
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
@@ -52,11 +80,21 @@ export const darkTheme = {
     onSurfaceVariant: "#9CA3AF",
     outline: "#374151",
     surfaceVariant: "#1F2937",
+    elevation: {
+      level0: 'transparent',
+      level1: '#111827',
+      level2: '#1F2937',
+      level3: '#374151',
+      level4: '#4B5563',
+      level5: '#6B7280',
+    }
   },
+  roundness: layout.radius.md,
   custom: {
     success: colors.success,
     warning: colors.warning,
     info: colors.info,
+    layout: layout,
     cardShadow: {
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 4 },
