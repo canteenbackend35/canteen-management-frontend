@@ -1,7 +1,11 @@
-import { api, API_ENDPOINTS } from "@/lib/api-client";
 import { Order } from "@/types";
 import React, { useEffect, useState } from "react";
+import { orderService } from "../services/orderService";
 
+/**
+ * Feature Hook: Handles fetching and refreshing orders.
+ * Now uses orderService for API abstraction.
+ */
 export const useOrders = (role: 'customer' | 'store') => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -13,11 +17,8 @@ export const useOrders = (role: 'customer' | 'store') => {
       setLoading(true);
       setError(null);
       
-      const endpoint = role === 'store' 
-        ? API_ENDPOINTS.STORES.ORDERS 
-        : API_ENDPOINTS.USERS.ORDERS;
-        
-      const response = await api.get<{ success: boolean, orders: Order[] }>(endpoint);
+      const response = await orderService.getOrders(role);
+      // Backend returns { success: true, orders: [...] }
       setOrders(response.orders || []);
     } catch (err: any) {
       setError(err.message || "Failed to load orders");

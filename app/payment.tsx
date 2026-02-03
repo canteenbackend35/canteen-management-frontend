@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Divider, IconButton, List, Surface, Text, useTheme } from 'react-native-paper';
 import { useCart } from '../context/CartContext';
 import { api, API_ENDPOINTS } from '../lib/api-client';
@@ -11,6 +11,56 @@ export default function PaymentScreen() {
   const router = useRouter();
   const theme = useTheme();
   const [loading, setLoading] = useState(false);
+  const [validating, setValidating] = useState(true);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [unavailableItems, setUnavailableItems] = useState<number[]>([]);
+
+  // Industrial Grade Check: Validate cart items against live backend data
+  React.useEffect(() => {
+    const validateCart = async () => {
+      if (!currentStoreId) return;
+      try {
+        setValidating(true);
+        // 1. Fetch live menu and stores list (to check open status)
+        const [liveMenu, liveStores] = await Promise.all([
+          api.get<any[]>(API_ENDPOINTS.STORES.MENU(currentStoreId), false),
+          api.get<any[]>(API_ENDPOINTS.STORES.LIST, false)
+        ]);
+
+        const currentStore = liveStores.find(s => String(s.store_id) === currentStoreId);
+        
+        // 2. Check Store Status
+        if (currentStore && currentStore.status === 'CLOSED') {
+          setValidationError("The canteen is now CLOSED. Please try again later.");
+          return;
+        }
+
+        // 3. Check specific Item Availability
+        const currentlyUnavailable: number[] = [];
+        items.forEach(cartItem => {
+          const liveItem = liveMenu.find(m => m.menu_item_id === cartItem.id);
+          if (!liveItem || liveItem.status === 'OUT_OF_STOCK') {
+            currentlyUnavailable.push(cartItem.id);
+          }
+        });
+
+        if (currentlyUnavailable.length > 0) {
+          setUnavailableItems(currentlyUnavailable);
+          setValidationError("Some items in your cart are no longer available.");
+        } else {
+          setValidationError(null);
+        }
+
+      } catch (err) {
+        console.error("Validation error:", err);
+        // We don't block if API fails, but ideally we should.
+      } finally {
+        setValidating(false);
+      }
+    };
+
+    validateCart();
+  }, [currentStoreId, items]);
 
   const handlePlaceOrder = async () => {
     if (!currentStoreId) {
@@ -72,24 +122,40 @@ export default function PaymentScreen() {
       <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.outline }]}>
         <IconButton icon="arrow-left" onPress={() => router.back()} iconColor={theme.colors.onSurface} />
         <Text style={[styles.headerTitle, { color: theme.colors.onSurface }]}>Checkout</Text>
-        <View style={{ width: 48 }} />
+        <View style={{ width: 48 }}>
+             {validating && <ActivityIndicator size="small" color={theme.colors.primary} />}
+        </View>
       </View>
+
+      {validationError && (
+        <View style={[styles.errorBanner, { backgroundColor: theme.colors.errorContainer }]}>
+          <IconButton icon="alert-decagram" iconColor={theme.colors.error} size={20} />
+          <Text style={[styles.errorBannerText, { color: theme.colors.error }]}>{validationError}</Text>
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={styles.scroll}>
         <Card style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]} elevation={0}>
           <Card.Content>
             <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>Order Summary</Text>
-            {items.map((item) => (
-              <List.Item
-                key={item.id}
-                title={item.name}
-                description={`Quantity: ${item.quantity}`}
-                titleStyle={{ color: theme.colors.onSurface, fontWeight: '700' }}
-                descriptionStyle={{ color: theme.colors.onSurfaceVariant }}
-                right={() => <Text style={[styles.itemPrice, { color: theme.colors.onSurface }]}>₹{(item.price * item.quantity).toFixed(2)}</Text>}
-                style={styles.listItem}
-              />
-            ))}
+            {items.map((item) => {
+              const isItemUnavailable = unavailableItems.includes(item.id);
+              return (
+                <List.Item
+                  key={item.id}
+                  title={item.name}
+                  description={isItemUnavailable ? "STORE OUT OF STOCK" : `Quantity: ${item.quantity}`}
+                  titleStyle={{ 
+                    color: isItemUnavailable ? theme.colors.outline : theme.colors.onSurface, 
+                    fontWeight: '700',
+                    textDecorationLine: isItemUnavailable ? 'line-through' : 'none'
+                  }}
+                  descriptionStyle={{ color: isItemUnavailable ? theme.colors.error : theme.colors.onSurfaceVariant, fontWeight: isItemUnavailable ? '800' : '400' }}
+                  right={() => <Text style={[styles.itemPrice, { color: isItemUnavailable ? theme.colors.outline : theme.colors.onSurface }]}>₹{(item.price * item.quantity).toFixed(2)}</Text>}
+                  style={styles.listItem}
+                />
+              );
+            })}
             <Divider style={{ marginVertical: 12, backgroundColor: theme.colors.outline }} />
             <View style={styles.totalRow}>
               <Text style={[styles.totalLabel, { color: theme.colors.onSurfaceVariant }]}>Total Amount</Text>
@@ -105,12 +171,12 @@ export default function PaymentScreen() {
           mode="contained" 
           onPress={handlePlaceOrder}
           loading={loading}
-          disabled={loading}
+          disabled={loading || !!validationError || validating}
           style={styles.placeOrderBtn}
-          buttonColor={theme.colors.primary}
+          buttonColor={validationError ? theme.colors.outline : theme.colors.primary}
           contentStyle={styles.placeOrderBtnContent}
         >
-          {loading ? "Placing Order..." : "Confirm & Place Order"}
+          {validationError ? "Cannot Place Order" : (loading ? "Placing Order..." : "Confirm & Place Order")}
         </Button>
       </Surface>
     </View>
@@ -198,5 +264,18 @@ const styles = StyleSheet.create({
   placeOrderBtnContent: {
     height: 52,
   },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    margin: 16,
+    borderRadius: 8,
+    marginBottom: 0,
+  },
+  errorBannerText: {
+    fontWeight: '800',
+    fontSize: 13,
+    flex: 1,
+  }
 });
 

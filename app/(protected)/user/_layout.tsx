@@ -8,6 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import HistoryPage from "./history";
 import OrdersPage from "./orders";
+import UserProfilePage from "./profile";
 import StoresPage from "./stores";
 
 const UserLayout = () => {
@@ -38,12 +39,14 @@ const UserLayout = () => {
     { key: "stores", title: "Stores", icon: "store" },
     { key: "liveOrders", title: "Orders", icon: "clipboard-list" },
     { key: "history", title: "History", icon: "history" },
+    { key: "profile", title: "Profile", icon: "account-settings" },
   ]);
 
   const renderScene = BottomNavigation.SceneMap({
     stores: StoresPage,
     liveOrders: OrdersPage,
     history: HistoryPage,
+    profile: UserProfilePage,
   });
 
   if (checking) {

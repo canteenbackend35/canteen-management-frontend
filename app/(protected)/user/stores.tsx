@@ -1,16 +1,16 @@
 import { CartBar } from "@/components/CartBar";
-import { api, API_ENDPOINTS } from "@/lib/api-client";
+import { storeService } from "@/features/store/services/storeService";
 import { Store } from "@/types";
 import * as Haptics from 'expo-haptics';
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    RefreshControl,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { Button, Card, IconButton, Text, useTheme } from "react-native-paper";
 import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
@@ -37,7 +37,7 @@ export default function StoreListScreen() {
     try {
       setLoading(true);
       setError(null);
-      const data = await api.get<Store[]>(API_ENDPOINTS.STORES.LIST, false);
+      const data = await storeService.getStores();
       setStores(data);
     } catch (err: any) {
       setError(err.message || "Failed to load stores");
@@ -88,25 +88,46 @@ export default function StoreListScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} tintColor={theme.colors.primary} />
         }
-        renderItem={({ item, index }) => (
-          <TouchableOpacity onPress={() => handlePress(item.store_id)} activeOpacity={0.7}>
-            <Animated.View entering={FadeInDown.delay(index * 50).springify()} layout={Layout.springify()}>
-              <Card style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]} elevation={0}>
-                <Card.Content style={styles.cardContent}>
-                  <View style={styles.storeInfo}>
-                    <Text style={[styles.storeName, { color: theme.colors.onSurface }]}>{item.store_name}</Text>
-                    {item.status && (
-                      <View style={[styles.statusBadge, { backgroundColor: theme.colors.primaryContainer }]}>
-                        <Text style={[styles.statusText, { color: theme.colors.primary }]}>{item.status}</Text>
-                      </View>
-                    )}
-                  </View>
-                  <IconButton icon="chevron-right" iconColor={theme.colors.onSurfaceVariant} size={20} />
-                </Card.Content>
-              </Card>
-            </Animated.View>
-          </TouchableOpacity>
-        )}
+        renderItem={({ item, index }) => {
+          const isClosed = item.status === 'CLOSED';
+          return (
+            <TouchableOpacity 
+              onPress={() => handlePress(item.store_id)} 
+              activeOpacity={isClosed ? 1 : 0.7}
+              disabled={isClosed}
+            >
+              <Animated.View entering={FadeInDown.delay(index * 50).springify()} layout={Layout.springify()}>
+                <Card 
+                  style={[
+                    styles.card, 
+                    { 
+                      backgroundColor: theme.colors.surface, 
+                      borderColor: theme.colors.outline,
+                      opacity: isClosed ? 0.6 : 1
+                    }
+                  ]} 
+                  elevation={0}
+                >
+                  <Card.Content style={styles.cardContent}>
+                    <View style={styles.storeInfo}>
+                      <Text style={[styles.storeName, { color: theme.colors.onSurface }]}>{item.store_name}</Text>
+                      {isClosed && (
+                        <View style={[styles.statusBadge, { backgroundColor: theme.colors.errorContainer }]}>
+                          <Text style={[styles.statusText, { color: theme.colors.error }]}>CLOSED</Text>
+                        </View>
+                      )}
+                    </View>
+                    <IconButton 
+                      icon={isClosed ? "store-off-outline" : "chevron-right"} 
+                      iconColor={isClosed ? theme.colors.error : theme.colors.onSurfaceVariant} 
+                      size={20} 
+                    />
+                  </Card.Content>
+                </Card>
+              </Animated.View>
+            </TouchableOpacity>
+          );
+        }}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <IconButton icon="store-off-outline" size={60} iconColor={theme.colors.outline} />

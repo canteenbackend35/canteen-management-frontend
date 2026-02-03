@@ -1,9 +1,10 @@
-import { useOrders } from "@/hooks/useOrders";
+import { OrderCard } from "@/features/orders/components/OrderCard";
+import { useOrders } from "@/features/orders/hooks/useOrders";
 import { Order } from "@/types";
 import { useRouter } from "expo-router";
 import React, { useMemo } from "react";
 import { ActivityIndicator, RefreshControl, SectionList, StyleSheet, View } from "react-native";
-import { Card, Chip, Divider, IconButton, Text, useTheme } from "react-native-paper";
+import { Chip, Divider, IconButton, Text, useTheme } from "react-native-paper";
 import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 
 const UserHistoryPage = () => {
@@ -18,7 +19,7 @@ const UserHistoryPage = () => {
     onRefresh 
   } = useOrders('customer');
 
-  const [filterType, setFilterType] = React.useState<'TODAY' | 'ALL'>('ALL'); // Users default to ALL
+  const [filterType, setFilterType] = React.useState<'TODAY' | 'ALL'>('TODAY');
 
   const sections = useMemo(() => {
     const historical = orders
@@ -49,46 +50,23 @@ const UserHistoryPage = () => {
     }));
   }, [orders, filterType]);
 
-  const statusColors: Record<string, string> = {
-    DELIVERED: theme.custom?.success || '#10B981',
-    CANCELLED: theme.colors.error,
-  };
-
-  const getStatusColor = (status: string) => {
-    return statusColors[status.toUpperCase()] || theme.colors.onSurfaceVariant;
-  };
+  // redundant logic removed
 
   const renderOrder = ({ item, index }: { item: Order, index: number }) => {
-    const statusColor = getStatusColor(item.order_status);
-    const isCancelled = item.order_status.toUpperCase() === 'CANCELLED';
-    
     return (
       <Animated.View 
         entering={FadeInDown.delay(index * 50).springify()} 
         layout={Layout.springify()}
       >
-        <Card 
-          style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, opacity: isCancelled ? 0.8 : 1 }]} 
-          elevation={0}
-        >
-          <Card.Content style={styles.cardContent}>
-            <View style={styles.orderHeader}>
-              <Text style={[styles.orderId, { color: theme.colors.onSurface }]}>Order #{item.order_id}</Text>
-              <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
-                <Text style={[styles.statusText, { color: statusColor }]}>
-                  {item.order_status}
-                </Text>
-              </View>
-            </View>
-            
-            <View style={styles.orderSubInfo}>
-              <Text style={[styles.priceText, { color: theme.colors.onSurface }]}>₹{item.total_price.toFixed(2)}</Text>
-              <Text style={[styles.dateText, { color: theme.colors.onSurfaceVariant }]}>
-                {new Date(item.order_date).toLocaleDateString()}
-              </Text>
-            </View>
-          </Card.Content>
-        </Card>
+        <OrderCard 
+          order={item} 
+          showAbsoluteTime={true}
+          style={{ 
+            opacity: item.order_status.toUpperCase() === 'CANCELLED' ? 0.7 : 1,
+            marginHorizontal: 16,
+            marginBottom: 8
+          }}
+        />
       </Animated.View>
     );
   };
@@ -165,20 +143,7 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
     paddingHorizontal: 16
   },
-  card: { 
-    marginBottom: 8, 
-    borderRadius: 12, 
-    borderWidth: 1,
-    marginHorizontal: 16
-  },
-  cardContent: { padding: 12 },
-  orderHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  orderId: { fontSize: 16, fontWeight: "800" },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
-  statusText: { fontSize: 11, fontWeight: "800", textTransform: 'uppercase' },
-  orderSubInfo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  priceText: { fontSize: 17, fontWeight: "900" },
-  dateText: { fontSize: 12, fontWeight: "600", opacity: 0.6 },
+  // styles removed
   listContent: { paddingBottom: 40 },
   header: { 
     marginBottom: 20, 

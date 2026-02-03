@@ -13,7 +13,7 @@ import { Button, Divider, IconButton, List, Text, useTheme } from "react-native-
 
 import { CartBar } from "@/components/CartBar";
 import { useCart } from "@/context/CartContext";
-import { api, API_ENDPOINTS } from "@/lib/api-client";
+import { menuService } from "@/features/menu/services/menuService";
 
 type MenuItem = {
   menu_item_id: number;
@@ -38,7 +38,7 @@ export default function StoreMenuScreen() {
       setError(null);
       if (!storeid) return;
       
-      const data = await api.get<MenuItem[]>(API_ENDPOINTS.STORES.MENU(String(storeid)), false);
+      const data = await menuService.getStoreMenu(String(storeid));
       setMenuItems(data);
     } catch (err: any) {
       setError(err.message || "Failed to load menu");

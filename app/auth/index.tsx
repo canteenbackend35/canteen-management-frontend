@@ -1,4 +1,4 @@
-import { API_ENDPOINTS, api } from "@/lib/api-client";
+import { authService } from "@/features/auth/services/authService";
 import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -22,12 +22,8 @@ export default function LoginScreen() {
     setLoading(true);
     setErrorMsg(null);
     try {
-      console.log("Sending login request to:", API_ENDPOINTS.AUTH.LOGIN, "with phone:", phone, "role:", role);
-      const response = await api.post(
-        API_ENDPOINTS.AUTH.LOGIN,
-        { phoneNo: phone, role: role },
-        false
-      );
+      console.log("Sending login request with phone:", phone, "role:", role);
+      const response = await authService.login(phone, role);
       console.log("Login Response received:", response);
 
       if (!response.success) {

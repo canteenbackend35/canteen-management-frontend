@@ -28,6 +28,7 @@ export const API_ENDPOINTS = {
     LIST: "/api/stores",
     MENU: (storeId: number | string) => `/api/stores/${storeId}/menu`,
     ORDERS: "/api/stores/orders",
+    UPDATE_STATUS: "/api/stores/status",
   },
   // 4. Order API - /api/orders
   ORDERS: {

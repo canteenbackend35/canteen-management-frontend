@@ -1,4 +1,4 @@
-import { api, API_ENDPOINTS } from "@/lib/api-client";
+import { authService } from "@/features/auth/services/authService";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
@@ -26,16 +26,7 @@ export default function OTPVerificationScreen() {
     setErrorMsg(null);
     try {
       console.log("Verifying OTP for:", phone, "with reqId:", currentReqId);
-      const response = await api.post(
-        API_ENDPOINTS.AUTH.VERIFY_OTP,
-        {
-          phoneNo: phone,
-          otp: otp,
-          reqId: currentReqId,
-          role: role,
-        },
-        false
-      );
+      const response = await authService.verifyOtp(phone, otp, currentReqId, role);
 
       console.log("Verification Response:", response);
 
@@ -66,11 +57,7 @@ export default function OTPVerificationScreen() {
     setErrorMsg(null);
     try {
       console.log("Resending OTP for:", phone);
-      const response = await api.post(
-        API_ENDPOINTS.AUTH.SEND_OTP,
-        { phoneNo: phone },
-        false
-      );
+      const response = await authService.resendOtp(phone);
 
       if (response.success) {
         setCurrentReqId(response.reqId);

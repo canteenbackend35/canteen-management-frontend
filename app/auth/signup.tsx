@@ -1,14 +1,14 @@
-import { API_ENDPOINTS, api } from "@/lib/api-client";
+import { authService } from "@/features/auth/services/authService";
 import * as Haptics from 'expo-haptics';
 import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View
 } from "react-native";
 import { Button, TextInput, useTheme } from "react-native-paper";
 
@@ -61,7 +61,7 @@ export default function SignupScreen() {
         college,
         course
       }; 
-      const response = await api.post(API_ENDPOINTS.AUTH.SIGNUP, payload, false);
+      const response = await authService.signup(payload);
 
       if (!response.success) {
         throw new Error(response.UImessage || "Signup failed");

@@ -1,8 +1,10 @@
-import { useOrders } from "@/hooks/useOrders";
+import { OrderCard } from "@/features/orders/components/OrderCard";
+import { useOrders } from "@/features/orders/hooks/useOrders";
 import { Order } from "@/types";
 import React, { useMemo } from "react";
 import { ActivityIndicator, RefreshControl, SectionList, StyleSheet, View } from "react-native";
 import { Card, Chip, Divider, Text, useTheme } from "react-native-paper";
+import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 
 const StoreHistoryPage = () => {
   const theme = useTheme() as any;
@@ -56,27 +58,22 @@ const StoreHistoryPage = () => {
     return { sections: sectionsData, dailyTotal: total, dailyCount: count };
   }, [orders, filterType]);
 
-  const renderOrder = ({ item }: { item: Order }) => {
-    const isCancelled = item.order_status.toUpperCase() === 'CANCELLED';
+  const renderOrder = ({ item, index }: { item: Order, index: number }) => {
     return (
-      <Card style={[styles.card, { borderColor: theme.colors.outline }]} elevation={0}>
-        <Card.Content style={styles.cardContent}>
-          <View>
-            <Text style={[styles.orderId, { color: theme.colors.onSurface }]}>Order #{item.order_id}</Text>
-            <Text style={[styles.orderDate, { color: theme.colors.onSurfaceVariant }]}>
-              {new Date(item.order_date).toLocaleDateString()} at {new Date(item.order_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </Text>
-          </View>
-          <View style={styles.priceSection}>
-            <Text style={[styles.price, { color: isCancelled ? theme.colors.error : theme.colors.primary }]}>
-              ₹{item.total_price.toFixed(2)}
-            </Text>
-            <Text style={[styles.statusLabel, { color: isCancelled ? theme.colors.error : theme.colors.primary }]}>
-              {item.order_status}
-            </Text>
-          </View>
-        </Card.Content>
-      </Card>
+      <Animated.View 
+        entering={FadeInDown.delay(index * 50).springify()} 
+        layout={Layout.springify()}
+      >
+        <OrderCard 
+          order={item} 
+          showAbsoluteTime={true}
+          style={{ 
+            opacity: item.order_status.toUpperCase() === 'CANCELLED' ? 0.7 : 1,
+            marginHorizontal: 16,
+            marginBottom: 8
+          }}
+        />
+      </Animated.View>
     );
   };
 
@@ -233,41 +230,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  card: {
-    marginBottom: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginHorizontal: 16,
-  },
-  cardContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  orderId: {
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  orderDate: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 2,
-    opacity: 0.6,
-  },
-  priceSection: {
-    alignItems: 'flex-end',
-  },
-  price: {
-    fontSize: 17,
-    fontWeight: '900',
-  },
-  statusLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    marginTop: 2,
-  },
+  // styles removed
   emptyContainer: {
     alignItems: 'center',
     marginTop: 60,
