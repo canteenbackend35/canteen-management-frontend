@@ -1,8 +1,8 @@
 import { useOrders } from "@/hooks/useOrders";
 import { Order } from "@/types";
 import React, { useMemo } from "react";
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from "react-native";
-import { Card, Text, useTheme } from "react-native-paper";
+import { ActivityIndicator, RefreshControl, SectionList, StyleSheet, View } from "react-native";
+import { Card, Chip, Divider, Text, useTheme } from "react-native-paper";
 
 const StoreHistoryPage = () => {
   const theme = useTheme() as any;
@@ -14,18 +14,47 @@ const StoreHistoryPage = () => {
     onRefresh 
   } = useOrders('store');
 
-  const historyOrders = useMemo(() => {
-    return orders
+  const [filterType, setFilterType] = React.useState<'TODAY' | 'ALL'>('TODAY');
+
+  const { sections, dailyTotal, dailyCount } = useMemo(() => {
+    const historical = orders
       .filter(o => ['DELIVERED', 'COMPLETED', 'CANCELLED'].includes(o.order_status.toUpperCase()))
       .sort((a,b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime());
-  }, [orders]);
 
-  const calculateDailyTotal = () => {
-    const today = new Date().toISOString().split('T')[0];
-    return historyOrders
-      .filter(o => o.order_date.startsWith(today) && (o.order_status === 'DELIVERED' || o.order_status.toUpperCase() === 'COMPLETED'))
-      .reduce((sum, o) => sum + o.total_price, 0);
-  };
+    const today = new Date().toLocaleDateString();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toLocaleDateString();
+
+    const groups: Record<string, Order[]> = {};
+    let total = 0;
+    let count = 0;
+
+    historical.forEach(order => {
+      const date = new Date(order.order_date).toLocaleDateString();
+      const isToday = date === today;
+      const isYesterday = date === yesterdayStr;
+      
+      const title = isToday ? "Today" : isYesterday ? "Yesterday" : date;
+      
+      if (isToday && (order.order_status === 'DELIVERED' || order.order_status.toUpperCase() === 'COMPLETED')) {
+        total += order.total_price;
+        count += 1;
+      }
+
+      if (filterType === 'TODAY' && !isToday) return;
+
+      if (!groups[title]) groups[title] = [];
+      groups[title].push(order);
+    });
+
+    const sectionsData = Object.keys(groups).map(title => ({
+      title,
+      data: groups[title]
+    }));
+
+    return { sections: sectionsData, dailyTotal: total, dailyCount: count };
+  }, [orders, filterType]);
 
   const renderOrder = ({ item }: { item: Order }) => {
     const isCancelled = item.order_status.toUpperCase() === 'CANCELLED';
@@ -51,6 +80,13 @@ const StoreHistoryPage = () => {
     );
   };
 
+  const renderSectionHeader = ({ section: { title } }: { section: { title: string } }) => (
+    <View style={[styles.sectionHeader, { backgroundColor: theme.colors.background }]}>
+      <Text style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant }]}>{title}</Text>
+      <Divider style={styles.sectionDivider} />
+    </View>
+  );
+
   if (loading && !refreshing) {
     return (
       <View style={[styles.container, styles.center, { backgroundColor: theme.colors.background }]}>
@@ -61,27 +97,50 @@ const StoreHistoryPage = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <FlatList
-        data={historyOrders}
+      <SectionList
+        sections={sections}
         keyExtractor={(item) => item.order_id.toString()}
         renderItem={renderOrder}
+        renderSectionHeader={renderSectionHeader}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />}
         contentContainerStyle={styles.listContent}
+        stickySectionHeadersEnabled={true}
         ListHeaderComponent={
           <>
             <View style={styles.header}>
-              <Text style={[styles.heading, { color: theme.colors.onSurface }]}>Order History</Text>
-              <Text style={[styles.subheading, { color: theme.colors.onSurfaceVariant }]}>Review your past sales and performance</Text>
+              <View style={styles.titleRow}>
+                <View>
+                  <Text style={[styles.heading, { color: theme.colors.onSurface }]}>Order History</Text>
+                  <Text style={[styles.subheading, { color: theme.colors.onSurfaceVariant }]}>Review your past sales</Text>
+                </View>
+                <View style={styles.filterRow}>
+                  <Chip 
+                    selected={filterType === 'TODAY'} 
+                    onPress={() => setFilterType('TODAY')}
+                    style={styles.filterChip}
+                    selectedColor={theme.colors.primary}
+                  >Today</Chip>
+                  <Chip 
+                    selected={filterType === 'ALL'} 
+                    onPress={() => setFilterType('ALL')}
+                    style={styles.filterChip}
+                    selectedColor={theme.colors.primary}
+                  >All</Chip>
+                </View>
+              </View>
             </View>
             
             <Card style={[styles.summaryCard, { backgroundColor: theme.colors.primaryContainer }]} elevation={0}>
-              <Card.Content>
-                <Text style={[styles.summaryLabel, { color: theme.colors.onPrimaryContainer }]}>Today's Total Sales</Text>
-                <Text style={[styles.summaryValue, { color: theme.colors.onPrimaryContainer }]}>₹{calculateDailyTotal().toFixed(2)}</Text>
+              <Card.Content style={styles.summaryContent}>
+                <View>
+                  <Text style={[styles.summaryLabel, { color: theme.colors.onPrimaryContainer }]}>Today's Sales</Text>
+                  <Text style={[styles.summaryValue, { color: theme.colors.onPrimaryContainer }]}>₹{dailyTotal.toFixed(2)}</Text>
+                </View>
+                <View style={styles.summaryStats}>
+                  <Chip icon="check-circle" style={styles.statChip}>{dailyCount} Orders</Chip>
+                </View>
               </Card.Content>
             </Card>
-            
-            <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>Past Orders</Text>
           </>
         }
         ListEmptyComponent={
@@ -121,6 +180,18 @@ const styles = StyleSheet.create({
     marginTop: 2,
     opacity: 0.7,
   },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  filterChip: {
+    height: 32,
+  },
   summaryCard: {
     borderRadius: 16,
     marginBottom: 20,
@@ -137,13 +208,30 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     marginTop: 2,
   },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    marginBottom: 12,
-    textTransform: 'uppercase',
-    opacity: 0.6,
+  summaryContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  summaryStats: {
+    alignItems: 'flex-end',
+  },
+  statChip: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  sectionHeader: {
+    paddingVertical: 12,
     paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  sectionDivider: {
+    marginTop: 8,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   card: {
     marginBottom: 8,

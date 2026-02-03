@@ -24,7 +24,6 @@ export interface MenuItem {
   store_id: number;
   name: string;
   price: number;
-  category: string;
   status: 'AVAILABLE' | 'OUT_OF_STOCK';
 }
 

@@ -1,9 +1,10 @@
+import { MultiStepSlider, OrderStatusType } from "@/components/MultiStepSlider";
 import { useOrders } from "@/hooks/useOrders";
 import { api, API_ENDPOINTS } from "@/lib/api-client";
 import { Order } from "@/types";
 import * as Haptics from 'expo-haptics';
 import React, { useMemo, useState } from "react";
-import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { Avatar, Button, Card, Divider, IconButton, Modal, Portal, Text, TextInput, useTheme } from "react-native-paper";
 import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 
@@ -22,31 +23,50 @@ const StoreKitchenView = () => {
   const [verificationOrder, setVerificationOrder] = useState<Order | null>(null);
   const [otpInput, setOtpInput] = useState("");
   const [verifying, setVerifying] = useState(false);
+  const [confirmingId, setConfirmingId] = useState<number | null>(null);
 
   const kitchenOrders = useMemo(() => {
     return orders
-      .filter(o => ['PENDING', 'CONFIRMED', 'PREPARING', 'ON_THE_WAY'].includes(o.order_status.toUpperCase()))
+      .filter(o => ['PENDING', 'CONFIRMED', 'PREPARING', 'READY'].includes(o.order_status.toUpperCase()))
       .sort((a, b) => new Date(a.order_date).getTime() - new Date(b.order_date).getTime());
   }, [orders]);
 
-  const handleAction = async (orderId: number, action: 'COMPLETE' | 'CANCEL' | 'VERIFY', otp?: string) => {
+  const handleAction = async (orderId: number, action: 'COMPLETE' | 'CANCEL' | 'VERIFY' | 'UPDATE_STATUS', payload?: any) => {
     try {
+      if (action === 'UPDATE_STATUS' && payload === 'CONFIRMED') {
+        setConfirmingId(orderId);
+      }
+      
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       
       let response;
       if (action === 'VERIFY') {
         setVerifying(true);
         response = await api.post(API_ENDPOINTS.ORDERS.VERIFY(orderId), {
-          order_otp: otp
+          order_otp: payload
         });
       } else if (action === 'COMPLETE') {
         response = await api.patch(API_ENDPOINTS.ORDERS.COMPLETE(orderId), {});
       } else if (action === 'CANCEL') {
         response = await api.patch(API_ENDPOINTS.ORDERS.CANCEL(orderId), {});
+      } else if (action === 'UPDATE_STATUS') {
+        switch (payload.toUpperCase()) {
+          case 'CONFIRMED':
+            response = await api.patch(API_ENDPOINTS.ORDERS.CONFIRM(orderId), {});
+            break;
+          case 'PREPARING':
+            response = await api.patch(API_ENDPOINTS.ORDERS.PREPARE(orderId), {});
+            break;
+          case 'READY':
+            response = await api.patch(API_ENDPOINTS.ORDERS.READY(orderId), {});
+            break;
+          default:
+            console.warn(`No specific route for status: ${payload}`);
+        }
       }
 
       if (response?.success) {
-        fetchOrders();
+        await fetchOrders();
         setSelectedOrder(null);
         setVerificationOrder(null);
         setOtpInput("");
@@ -55,8 +75,20 @@ const StoreKitchenView = () => {
       }
     } catch (err: any) {
       console.error(`Failed to ${action} order ${orderId}:`, err);
+      alert(err.message || "Action failed");
     } finally {
       setVerifying(false);
+      setConfirmingId(null);
+    }
+  };
+
+  const getNextStatus = (currentStatus: string): { label: string; status: string } | null => {
+    switch (currentStatus.toUpperCase()) {
+      case 'PENDING': return { label: 'Slide to Confirm', status: 'CONFIRMED' };
+      case 'CONFIRMED': return { label: 'Slide to Prepare', status: 'PREPARING' };
+      case 'PREPARING': return { label: 'Slide to Ready', status: 'READY' };
+      case 'READY': return { label: 'Slide to Verify', status: 'VERIFY' };
+      default: return null;
     }
   };
 
@@ -64,7 +96,7 @@ const StoreKitchenView = () => {
     PENDING: theme.custom?.warning || '#F59E0B',
     CONFIRMED: theme.colors.primary,
     PREPARING: theme.colors.secondary,
-    ON_THE_WAY: theme.custom?.info || '#3B82F6',
+    READY: theme.custom?.info || '#3B82F6',
     DELIVERED: theme.custom?.success || '#10B981',
     CANCELLED: theme.colors.error,
   };
@@ -97,55 +129,66 @@ const StoreKitchenView = () => {
             }
           ]} 
           elevation={1}
-          onPress={() => setSelectedOrder(item)}
         >
-          <View style={styles.compactRow}>
-            {/* 1. Primary Detail: The Food Items */}
+          {/* Top Section: Info (Clickable) */}
+          <Pressable 
+            onPress={() => setSelectedOrder(item)}
+            style={({ pressed }) => [
+              styles.cardTopSection,
+              { opacity: pressed ? 0.7 : 1 }
+            ]}
+          >
             <View style={styles.mainInfo}>
               <View style={styles.titleRow}>
                  <Text style={[styles.orderIdText, { color: theme.colors.onSurface }]}>#{item.order_id}</Text>
                  <Text style={[styles.timeText, { color: isOverdue ? theme.colors.error : theme.colors.onSurfaceVariant }]}>
                    • {timeAgo}m ago
                  </Text>
+                 <View style={[styles.miniStatus, { backgroundColor: statusColor + '20' }]}>
+                    <Text style={[styles.statusMiniText, { color: statusColor }]}>{item.order_status}</Text>
+                 </View>
               </View>
               <Text style={[styles.itemsSummary, { color: theme.colors.onSurface }]} numberOfLines={2}>
                 {itemsSummary}
               </Text>
-              <Text style={[styles.customerMini, { color: theme.colors.onSurfaceVariant }]}>
-                 {item.customer?.name || "Walk-in"}
-              </Text>
+              <View style={styles.customerRow}>
+                <Text style={[styles.customerMini, { color: theme.colors.onSurfaceVariant }]}>
+                   {item.customer?.name || "Walk-in"}
+                </Text>
+                <Text style={[styles.priceText, { color: theme.colors.primary, fontWeight: '900' }]}>
+                  ₹{item.total_price}
+                </Text>
+              </View>
             </View>
-            
-            {/* 2. Secondary/Action: Verification Part */}
-            <View style={styles.actionPart}>
-              {item.order_status === 'PENDING' ? (
-                <View style={styles.otpActionGroup}>
-                   <Text style={[styles.actionLabel, { color: theme.colors.primary }]}>VERIFY</Text>
-                   <IconButton 
-                    icon="shield-key-outline" 
-                    mode="contained"
-                    containerColor={theme.colors.primaryContainer}
-                    iconColor={theme.colors.primary}
-                    size={28}
-                    onPress={() => setVerificationOrder(item)}
-                    style={styles.actionIconBtn}
-                  />
-                </View>
-              ) : (
-                <View style={styles.otpActionGroup}>
-                   <Text style={[styles.actionLabel, { color: '#10B981' }]}>FINISH</Text>
-                   <IconButton 
-                    icon="check-bold" 
-                    mode="contained"
-                    containerColor="#10B98115"
-                    iconColor="#10B981"
-                    size={28}
-                    onPress={() => handleAction(item.order_id, 'COMPLETE')}
-                    style={styles.actionIconBtn}
-                  />
-                </View>
-              )}
-            </View>
+          </Pressable>
+
+          {/* Bottom Section: Slider/Action (Independent) */}
+          <View style={styles.cardActionSection}>
+            {item.order_status.toUpperCase() === 'PENDING' ? (
+              <Button 
+                mode="contained" 
+                onPress={() => handleAction(item.order_id, 'UPDATE_STATUS', 'CONFIRMED')}
+                loading={confirmingId === item.order_id}
+                disabled={confirmingId !== null}
+                style={styles.confirmBtn}
+                contentStyle={{ height: 36 }}
+                labelStyle={{ fontSize: 11, fontWeight: '900' }}
+              >
+                ACCEPT ORDER
+              </Button>
+            ) : (
+              <MultiStepSlider 
+                compact
+                currentStatus={item.order_status as OrderStatusType}
+                onStatusChange={(newStatus) => {
+                  if (newStatus === 'DELIVERED') {
+                    setVerificationOrder(item);
+                  } else if (newStatus !== item.order_status) {
+                    handleAction(item.order_id, 'UPDATE_STATUS', newStatus);
+                  }
+                }}
+              />
+            )}
           </View>
         </Card>
       </Animated.View>
@@ -231,35 +274,22 @@ const StoreKitchenView = () => {
               </View>
 
               <View style={styles.modalActions}>
-                {selectedOrder.order_status === 'PENDING' ? (
-                  <Button 
-                    mode="contained" 
-                    onPress={() => {
-                      setSelectedOrder(null);
-                      setVerificationOrder(selectedOrder);
-                    }}
-                    style={styles.modalActionBtn}
-                    icon="shield-check"
-                  >
-                    Verify & Handover
-                  </Button>
-                ) : (
-                  <Button 
-                    mode="contained" 
-                    onPress={() => handleAction(selectedOrder.order_id, 'COMPLETE')}
-                    style={[styles.modalActionBtn, { backgroundColor: '#10B981' }]}
-                    icon="check-circle"
-                  >
-                    Mark Delivered
-                  </Button>
-                )}
                 <Button 
-                  mode="text" 
-                  onPress={() => handleAction(selectedOrder.order_id, 'CANCEL')}
-                  style={[styles.modalCancelBtn]}
-                  textColor={theme.colors.error}
+                  mode="contained" 
+                  onPress={() => setSelectedOrder(null)}
+                  style={styles.modalActionBtn}
                 >
-                  Reject Order
+                  Close Details
+                </Button>
+
+                <Button 
+                  mode="outlined" 
+                  onPress={() => handleAction(selectedOrder.order_id, 'CANCEL')}
+                  style={[styles.modalCancelBtn, { borderColor: theme.colors.error }]}
+                  textColor={theme.colors.error}
+                  icon="close-circle-outline"
+                >
+                  Reject & Cancel Order
                 </Button>
               </View>
             </ScrollView>
@@ -327,29 +357,42 @@ const styles = StyleSheet.create({
   headerStats: {},
   statBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, fontSize: 12, fontWeight: '800' },
   
-  compactCard: { 
-    marginBottom: 10, 
-    borderRadius: 12, 
-    borderWidth: 1, 
+  compactCard: {
     marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 12,
     overflow: 'hidden',
+    borderWidth: 1,
   },
-  compactRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
+  cardTopSection: {
     padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
-  mainInfo: { flex: 1, paddingRight: 12 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  orderIdText: { fontSize: 16, fontWeight: "900" },
+  cardActionSection: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+  },
+  mainInfo: { width: '100%' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  orderIdText: { fontSize: 15, fontWeight: "900" },
   timeText: { fontSize: 12, fontWeight: "700", marginLeft: 4 },
-  itemsSummary: { fontSize: 15, fontWeight: "800", lineHeight: 20, marginBottom: 4 },
-  customerMini: { fontSize: 11, fontWeight: "600", textTransform: 'uppercase', opacity: 0.6 },
-
-  actionPart: { width: 80, alignItems: 'center', borderLeftWidth: 1, borderLeftColor: 'rgba(0,0,0,0.05)', paddingLeft: 8 },
-  otpActionGroup: { alignItems: 'center' },
-  actionLabel: { fontSize: 10, fontWeight: "900", marginBottom: -4, marginTop: 2 },
-  actionIconBtn: { margin: 0 },
+  miniStatus: { 
+    paddingHorizontal: 8, 
+    paddingVertical: 3, 
+    borderRadius: 6, 
+    marginLeft: 'auto' 
+  },
+  statusMiniText: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
+  itemsSummary: { fontSize: 14, fontWeight: "800", lineHeight: 20, marginBottom: 8 },
+  customerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  customerMini: { fontSize: 11, fontWeight: "600", textTransform: 'uppercase', opacity: 0.5 },
+  priceText: { fontSize: 14 },
+  confirmBtn: {
+    borderRadius: 8,
+    width: '100%',
+  },
 
   listContent: { paddingBottom: 60, paddingTop: 10 },
   emptyContainer: { alignItems: "center", marginTop: 100 },

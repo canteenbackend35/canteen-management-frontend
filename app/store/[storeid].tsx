@@ -61,6 +61,10 @@ export default function StoreMenuScreen() {
   }, [storeid, fetchMenu]);
 
   const handleAddToCart = (item: MenuItem) => {
+    if (item.status === 'OUT_OF_STOCK') {
+      return;
+    }
+
     const sId = String(storeid);
     
     // Check if adding from a different store
@@ -162,11 +166,19 @@ export default function StoreMenuScreen() {
             <List.Item
               title={item.name}
               description={`₹${item.price.toFixed(2)}`}
-              titleStyle={[styles.itemName, { color: theme.colors.onSurface }]}
-              descriptionStyle={[styles.itemPrice, { color: theme.colors.onSurfaceVariant }]}
+              titleStyle={[
+                styles.itemName, 
+                { color: item.status === 'OUT_OF_STOCK' ? theme.colors.outline : theme.colors.onSurface }
+              ]}
+              descriptionStyle={[
+                styles.itemPrice, 
+                { color: item.status === 'OUT_OF_STOCK' ? theme.colors.outline : theme.colors.onSurfaceVariant }
+              ]}
               right={() => (
                 <View style={styles.actionContainer}>
-                  {quantity > 0 ? (
+                  {item.status === 'OUT_OF_STOCK' ? (
+                    <Text style={[styles.soldOutText, { color: theme.colors.error }]}>SOLD OUT</Text>
+                  ) : quantity > 0 ? (
                     <View style={[styles.quantityRow, { backgroundColor: theme.colors.surfaceVariant }]}>
                       <IconButton
                         icon="minus"
@@ -200,7 +212,10 @@ export default function StoreMenuScreen() {
                   )}
                 </View>
               )}
-              style={styles.listItem}
+              style={[
+                styles.listItem,
+                item.status === 'OUT_OF_STOCK' && { opacity: 0.6 }
+              ]}
             />
           );
         }}
@@ -254,6 +269,13 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     height: 38,
     borderRadius: 10,
+    backgroundColor: 'white',
+  },
+  soldOutText: {
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+    opacity: 0.8,
   },
   quantityRow: {
     flexDirection: 'row',

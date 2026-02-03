@@ -33,8 +33,10 @@ export const API_ENDPOINTS = {
   ORDERS: {
     CREATE: "/api/orders",
     DETAILS: (orderId: number | string) => `/api/orders/${orderId}`,
-    STATUS: (orderId: number | string) => `/api/orders/${orderId}/status`,
+    CONFIRM: (orderId: number | string) => `/api/orders/${orderId}/confirm`,
     VERIFY: (orderId: number | string) => `/api/orders/${orderId}/verify`,
+    PREPARE: (orderId: number | string) => `/api/orders/${orderId}/prepare`,
+    READY: (orderId: number | string) => `/api/orders/${orderId}/ready`,
     COMPLETE: (orderId: number | string) => `/api/orders/${orderId}/complete`,
     CANCEL: (orderId: number | string) => `/api/orders/${orderId}/cancel`,
   },

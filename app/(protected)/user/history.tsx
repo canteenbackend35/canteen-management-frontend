@@ -2,8 +2,8 @@ import { useOrders } from "@/hooks/useOrders";
 import { Order } from "@/types";
 import { useRouter } from "expo-router";
 import React, { useMemo } from "react";
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from "react-native";
-import { Card, IconButton, Text, useTheme } from "react-native-paper";
+import { ActivityIndicator, RefreshControl, SectionList, StyleSheet, View } from "react-native";
+import { Card, Chip, Divider, IconButton, Text, useTheme } from "react-native-paper";
 import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 
 const UserHistoryPage = () => {
@@ -15,15 +15,39 @@ const UserHistoryPage = () => {
     loading, 
     error,
     refreshing, 
-    onRefresh, 
-    fetchOrders 
+    onRefresh 
   } = useOrders('customer');
 
-  const historyOrders = useMemo(() => {
-    return orders
+  const [filterType, setFilterType] = React.useState<'TODAY' | 'ALL'>('ALL'); // Users default to ALL
+
+  const sections = useMemo(() => {
+    const historical = orders
       .filter(o => ['DELIVERED', 'CANCELLED'].includes(o.order_status.toUpperCase()))
       .sort((a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime());
-  }, [orders]);
+
+    const today = new Date().toLocaleDateString();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toLocaleDateString();
+
+    const groups: Record<string, Order[]> = {};
+
+    historical.forEach(order => {
+      const date = new Date(order.order_date).toLocaleDateString();
+      const isToday = date === today;
+      const title = isToday ? "Today" : date === yesterdayStr ? "Yesterday" : date;
+      
+      if (filterType === 'TODAY' && !isToday) return;
+
+      if (!groups[title]) groups[title] = [];
+      groups[title].push(order);
+    });
+
+    return Object.keys(groups).map(title => ({
+      title,
+      data: groups[title]
+    }));
+  }, [orders, filterType]);
 
   const statusColors: Record<string, string> = {
     DELIVERED: theme.custom?.success || '#10B981',
@@ -69,6 +93,13 @@ const UserHistoryPage = () => {
     );
   };
 
+  const renderSectionHeader = ({ section: { title } }: { section: { title: string } }) => (
+    <View style={[styles.sectionHeader, { backgroundColor: theme.colors.background }]}>
+      <Text style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant }]}>{title}</Text>
+      <Divider style={styles.sectionDivider} />
+    </View>
+  );
+
   if (loading && !refreshing) {
     return (
       <View style={[styles.container, styles.center, { backgroundColor: theme.colors.background }]}>
@@ -80,20 +111,40 @@ const UserHistoryPage = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <FlatList
-        data={historyOrders}
+      <SectionList
+        sections={sections}
         keyExtractor={(item) => item.order_id.toString()}
+        renderItem={renderOrder}
+        renderSectionHeader={renderSectionHeader}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
         }
-        renderItem={renderOrder}
         contentContainerStyle={styles.listContent}
+        stickySectionHeadersEnabled={true}
         ListHeaderComponent={
-          <Text style={[styles.heading, { color: theme.colors.onSurface }]}>
-            Order History
-          </Text>
+          <View style={styles.header}>
+            <View style={styles.titleRow}>
+              <View>
+                <Text style={[styles.heading, { color: theme.colors.onSurface }]}>Order History</Text>
+                <Text style={[styles.subheading, { color: theme.colors.onSurfaceVariant }]}>Your past cravings</Text>
+              </View>
+              <View style={styles.filterRow}>
+                <Chip 
+                  selected={filterType === 'TODAY'} 
+                  onPress={() => setFilterType('TODAY')}
+                  style={styles.filterChip}
+                  selectedColor={theme.colors.primary}
+                >Today</Chip>
+                <Chip 
+                  selected={filterType === 'ALL'} 
+                  onPress={() => setFilterType('ALL')}
+                  style={styles.filterChip}
+                  selectedColor={theme.colors.primary}
+                >All</Chip>
+              </View>
+            </View>
+          </View>
         }
-        ListHeaderComponentStyle={styles.listHeader}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <IconButton icon="history" size={60} iconColor={theme.colors.outline} />
@@ -128,8 +179,44 @@ const styles = StyleSheet.create({
   orderSubInfo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   priceText: { fontSize: 17, fontWeight: "900" },
   dateText: { fontSize: 12, fontWeight: "600", opacity: 0.6 },
-  listContent: { paddingBottom: 40, paddingTop: 10 },
-  listHeader: { marginBottom: 20, marginTop: 10 },
+  listContent: { paddingBottom: 40 },
+  header: { 
+    marginBottom: 20, 
+    marginTop: 10,
+    paddingHorizontal: 16
+  },
+  subheading: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginTop: 2,
+    opacity: 0.7,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  filterChip: {
+    height: 32,
+  },
+  sectionHeader: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  sectionDivider: {
+    marginTop: 8,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
   loadingText: { marginTop: 12, fontSize: 16, fontWeight: '500' },
   emptyContainer: { alignItems: "center", marginTop: 80, paddingHorizontal: 40 },
   emptyText: { textAlign: "center", fontSize: 17, fontWeight: '600', marginTop: 8 },
