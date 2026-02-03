@@ -28,18 +28,18 @@ export const orderService = {
    */
   async updateStatus(orderId: number, status: string, otp?: string) {
     const statusUpper = status.toUpperCase();
-    
+    console.log(status)
     // Support both state-based and action-based strings
     if (statusUpper === 'CONFIRM' || statusUpper === 'CONFIRMED') {
-      return api.post(API_ENDPOINTS.ORDERS.CONFIRM(orderId), {});
+      return api.patch(API_ENDPOINTS.ORDERS.CONFIRM(orderId), {});
     }
     
     if (statusUpper === 'PREPARE' || statusUpper === 'PREPARING') {
-      return api.post(API_ENDPOINTS.ORDERS.PREPARE(orderId), {});
+      return api.patch(API_ENDPOINTS.ORDERS.PREPARE(orderId), {});
     }
     
     if (statusUpper === 'READY') {
-      return api.post(API_ENDPOINTS.ORDERS.READY(orderId), {});
+      return api.patch(API_ENDPOINTS.ORDERS.READY(orderId), {});
     }
     
     if (statusUpper === 'VERIFY' || statusUpper === 'DELIVERED') {
@@ -47,11 +47,11 @@ export const orderService = {
     }
     
     if (statusUpper === 'COMPLETE' || statusUpper === 'COMPLETED') {
-      return api.post(API_ENDPOINTS.ORDERS.COMPLETE(orderId), {});
+      return api.patch(API_ENDPOINTS.ORDERS.COMPLETE(orderId), {});
     }
     
     if (statusUpper === 'CANCEL' || statusUpper === 'CANCELLED') {
-      return api.post(API_ENDPOINTS.ORDERS.CANCEL(orderId), {});
+      return api.patch(API_ENDPOINTS.ORDERS.CANCEL(orderId), {});
     }
 
     throw new Error(`Unsupported status update: ${status}`);
