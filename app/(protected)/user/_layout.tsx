@@ -3,7 +3,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { Appbar, BottomNavigation, useTheme } from "react-native-paper";
+import { BottomNavigation, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import HistoryPage from "./history";
@@ -57,13 +57,7 @@ const UserLayout = () => {
     );
   }
 
-  const handleLogout = async () => {
-    try {
-      router.replace("/auth");
-    } catch (err) {
-      console.error("Logout failed", err);
-    }
-  };
+
 
   const renderIcon = ({
     route,
@@ -84,13 +78,7 @@ const UserLayout = () => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top"]}>
-      <Appbar.Header style={{ backgroundColor: theme.colors.surface, height: 56, borderBottomWidth: 1, borderBottomColor: theme.colors.outline }} elevated={false}>
-        <Appbar.Content title="Canteen" titleStyle={[styles.logo, { color: theme.colors.primary }]} />
-        <Appbar.Action icon="bell-outline" onPress={() => {}} iconColor={theme.colors.onSurfaceVariant} />
-        <Appbar.Action icon="logout" onPress={handleLogout} iconColor={theme.colors.onSurfaceVariant} />
-      </Appbar.Header>
-
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top", "bottom"]}>
       <BottomNavigation
         navigationState={{ index, routes }}
         onIndexChange={setIndex}

@@ -22,7 +22,13 @@ export const OrderCard = ({ order, onPress, children, style, showAbsoluteTime, h
   const theme = useTheme();
   
   const timeAgo = useMemo(() => {
-    return Math.floor((new Date().getTime() - new Date(order.order_date).getTime()) / 60000);
+    const minutes = Math.floor((new Date().getTime() - new Date(order.order_date).getTime()) / 60000);
+    if (minutes < 60) {
+      return `${minutes}m ago`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return `${hours}h ${remainingMinutes}m ago`;
   }, [order.order_date]);
 
   const absoluteTime = useMemo(() => {
@@ -36,7 +42,11 @@ export const OrderCard = ({ order, onPress, children, style, showAbsoluteTime, h
     ).join(', ');
   }, [order.items]);
 
-  const isOverdue = !showAbsoluteTime && timeAgo > 15;
+  const minutesAgo = useMemo(() => {
+    return Math.floor((new Date().getTime() - new Date(order.order_date).getTime()) / 60000);
+  }, [order.order_date]);
+
+  const isOverdue = !showAbsoluteTime && minutesAgo > 15;
 
   return (
     <Card 
@@ -58,8 +68,13 @@ export const OrderCard = ({ order, onPress, children, style, showAbsoluteTime, h
         <View style={styles.titleRow}>
           <Text style={[styles.orderId, { color: theme.colors.onSurface }]}>#{order.order_id}</Text>
           <Text style={[styles.timeText, { color: isOverdue ? theme.colors.error : theme.colors.onSurfaceVariant }]}>
-            • {absoluteTime} {showAbsoluteTime ? '' : `(${timeAgo}m ago)`}
+            {absoluteTime}
           </Text>
+          {!showAbsoluteTime && (
+            <Text style={[styles.timeAgoText, { color: isOverdue ? theme.colors.error : theme.colors.onSurfaceVariant }]}>
+              ({timeAgo})
+            </Text>
+          )}
           <StatusBadge status={order.order_status} style={styles.statusBadge} />
         </View>
 
@@ -111,7 +126,8 @@ const styles = StyleSheet.create({
     fontWeight: TYPOGRAPHY.H2.fontWeight,
     letterSpacing: TYPOGRAPHY.H2.letterSpacing,
   },
-  timeText: { fontSize: 12, fontWeight: '700', marginLeft: 4 },
+  timeText: { fontSize: 12, fontWeight: '700', marginLeft: 8 },
+  timeAgoText: { fontSize: 11, fontWeight: '600', marginLeft: 4 },
   statusBadge: { marginLeft: 'auto' },
   summary: { 
     fontSize: TYPOGRAPHY.BODY_BOLD.fontSize,

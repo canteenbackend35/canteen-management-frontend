@@ -1,3 +1,4 @@
+import { createOrderSchema } from '@/lib/validators';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -78,6 +79,12 @@ export default function PaymentScreen() {
           quantity: item.quantity
         }))
       };
+
+      // Validate with Zod
+      const validation = createOrderSchema.safeParse(orderData);
+      if (!validation.success) {
+        throw new Error(validation.error.issues[0].message);
+      }
 
       const response = await api.post(API_ENDPOINTS.ORDERS.CREATE, orderData, true);
 

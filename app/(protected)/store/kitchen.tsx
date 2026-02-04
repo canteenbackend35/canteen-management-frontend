@@ -2,6 +2,7 @@ import { MultiStepSlider, OrderStatusType } from "@/features/orders/components/M
 import { OrderCard } from "@/features/orders/components/OrderCard";
 import { useOrderActions } from "@/features/orders/hooks/useOrderActions";
 import { useOrders } from "@/features/orders/hooks/useOrders";
+import { verifyOrderSchema } from "@/lib/validators";
 import { Order } from "@/types";
 import React, { useMemo, useState } from "react";
 import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
@@ -37,17 +38,25 @@ const StoreKitchenView = () => {
       .sort((a, b) => new Date(a.order_date).getTime() - new Date(b.order_date).getTime());
   }, [orders]);
 
-  const onVerifyOtp = async () => {
+  async function onVerifyOtp() {
     if (!verificationOrder) return;
     try {
+      // Validate with Zod
+      const validation = verifyOrderSchema.safeParse({ order_otp: otpInput });
+      if (!validation.success) {
+        alert(validation.error.issues[0].message);
+        return;
+      }
+
       setVerifying(true);
       await handleAction(verificationOrder.order_id, 'VERIFY', otpInput);
     } catch (err) {
+      console.error("Verification error:", err);
       // Error handled by hook
     } finally {
       setVerifying(false);
     }
-  };
+  }
 
   const renderCompactOrder = ({ item, index }: { item: Order, index: number }) => {
     return (

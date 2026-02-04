@@ -1,4 +1,5 @@
 import { authService } from "@/features/auth/services/authService";
+import { loginSchema } from "@/lib/validators";
 import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -13,9 +14,10 @@ export default function LoginScreen() {
   const theme = useTheme();
 
   const handleContinue = async () => {
-    // Basic 10-digit validation
-    if (!/^\d{10}$/.test(phone)) {
-      setErrorMsg("Please enter a valid 10-digit phone number");
+    // Validate with Zod
+    const validation = loginSchema.safeParse({ phoneNo: phone, role });
+    if (!validation.success) {
+      setErrorMsg(validation.error.issues[0].message);
       return;
     }
 

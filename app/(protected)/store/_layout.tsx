@@ -3,7 +3,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { Appbar, BottomNavigation, useTheme } from "react-native-paper";
+import { BottomNavigation, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import StoreHistoryPage from "./history";
@@ -75,17 +75,10 @@ const StoreLayout = () => {
     );
   }
 
-  const handleLogout = () => {
-    router.replace("/auth");
-  };
+
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top"]}>
-      <Appbar.Header style={{ backgroundColor: theme.colors.surface, height: 56, borderBottomWidth: 1, borderBottomColor: theme.colors.outline }} elevated={false}>
-        <Appbar.Content title="Store Panel" titleStyle={[styles.logo, { color: theme.colors.primary }]} />
-        <Appbar.Action icon="logout" onPress={handleLogout} iconColor={theme.colors.onSurfaceVariant} />
-      </Appbar.Header>
-
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top", "bottom"]}>
       <BottomNavigation
         navigationState={{ index, routes }}
         onIndexChange={setIndex}

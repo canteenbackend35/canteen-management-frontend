@@ -1,36 +1,59 @@
+import { useFonts } from 'expo-font';
 import { Stack } from "expo-router";
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from "expo-status-bar";
-import React from "react";
-import { Platform, StyleSheet, useColorScheme, View } from "react-native";
+import React, { useEffect } from "react";
+import { StyleSheet, useColorScheme, View } from "react-native";
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider as PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { darkTheme, lightTheme } from "../constants/theme";
 import { CartProvider } from "../context/CartContext";
 
+// Prevent auto-hiding splash screen
+SplashScreen.preventAutoHideAsync();
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const theme = colorScheme === "dark" ? darkTheme : lightTheme;
 
-  return (
-    <PaperProvider theme={theme}>
-      <View style={[styles.outerContainer, { backgroundColor: theme.colors.background }]}>
-        <SafeAreaProvider style={styles.webShell}>
-          <CartProvider>
-            <StatusBar
-              style={colorScheme === "dark" ? "light" : "dark"}
-              backgroundColor={theme.colors.surface}
-            />
+  const [fontsLoaded] = useFonts({
+    // Load Material Community Icons font
+    'MaterialCommunityIcons': require('@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf'),
+  });
 
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: theme.colors.background }
-              }}
-            />
-          </CartProvider>
-        </SafeAreaProvider>
-      </View>
-    </PaperProvider>
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PaperProvider theme={theme}>
+        <View style={[styles.outerContainer, { backgroundColor: theme.colors.background }]}>
+          <SafeAreaProvider style={styles.webShell}>
+            <CartProvider>
+              <StatusBar
+                style={colorScheme === "dark" ? "light" : "dark"}
+                backgroundColor={theme.colors.surface}
+              />
+
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: theme.colors.background }
+                }}
+              />
+            </CartProvider>
+          </SafeAreaProvider>
+        </View>
+      </PaperProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -42,18 +65,7 @@ const styles = StyleSheet.create({
   },
   webShell: {
     width: '100%',
-    maxWidth: Platform.OS === 'web' ? 500 : '100%', // Elegant mobile-width on desktop
     height: '100%',
-    backgroundColor: '#000', // Just in case
-    // Add a shadow on web for a "Floating App" feel
-    ...Platform.select({
-      web: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 5,
-      }
-    })
+    backgroundColor: '#000',
   }
 });

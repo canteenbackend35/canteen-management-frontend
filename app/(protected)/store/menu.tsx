@@ -1,4 +1,5 @@
 import { api, API_ENDPOINTS } from "@/lib/api-client";
+import { menuItemSchema as menuItemBodySchema } from "@/lib/validators";
 import { MenuItem } from "@/types";
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useState } from "react";
@@ -20,6 +21,7 @@ const StoreMenuPage = () => {
   const [price, setPrice] = useState("");
   const [status, setStatus] = useState<'AVAILABLE' | 'OUT_OF_STOCK'>('AVAILABLE');
   const [saving, setSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState<{ name?: string; price?: string }>({});
 
   useEffect(() => {
     fetchMenu();
@@ -56,7 +58,7 @@ const StoreMenuPage = () => {
   const toggleAvailability = async (itemId: number, currentStatus: MenuItem['status']) => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      const newStatus = currentStatus === 'AVAILABLE' ? 'OUT_OF_STOCK' : 'AVAILABLE';
+      const newStatus = currentStatus.toUpperCase() === 'AVAILABLE' ? 'OUT_OF_STOCK' : 'AVAILABLE' as 'AVAILABLE' | 'OUT_OF_STOCK';
       
       setItems(prev => prev.map(item => 
         item.menu_item_id === itemId ? { ...item, status: newStatus } : item
@@ -79,7 +81,7 @@ const StoreMenuPage = () => {
       setEditingItem(item);
       setName(item.name);
       setPrice(item.price.toString());
-      setStatus(item.status);
+      setStatus(item.status.toUpperCase() as 'AVAILABLE' | 'OUT_OF_STOCK');
     } else {
       setEditingItem(null);
       setName("");
@@ -92,12 +94,30 @@ const StoreMenuPage = () => {
   const closeModal = () => {
     setIsModalVisible(false);
     setEditingItem(null);
+    setFormErrors({});
   };
 
   const handleSave = async () => {
-    if (!name || !price) return;
-    
+    // Validate with Zod
+    const validation = menuItemBodySchema.safeParse({
+      name,
+      price,
+      status
+    });
+
+    if (!validation.success) {
+      const errors: any = {};
+      validation.error.issues.forEach(issue => {
+        if (issue.path[0]) errors[issue.path[0]] = issue.message;
+      });
+      setFormErrors(errors);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
     setSaving(true);
+    setFormErrors({});
+    
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const meResponse = await api.get(API_ENDPOINTS.AUTH.ME);
@@ -105,9 +125,7 @@ const StoreMenuPage = () => {
 
       const payload = {
         store_id: storeId,
-        name,
-        price: parseFloat(price),
-        status
+        ...validation.data
       };
 
       if (editingItem) {
@@ -120,6 +138,7 @@ const StoreMenuPage = () => {
       closeModal();
     } catch (err: any) {
       console.error("Failed to save menu item:", err);
+      setError(err.message || "Failed to save item");
     } finally {
       setSaving(false);
     }
@@ -136,7 +155,7 @@ const StoreMenuPage = () => {
   };
 
   const renderItem = ({ item, index }: { item: MenuItem, index: number }) => {
-    const isAvailable = item.status === 'AVAILABLE';
+    const isAvailable = item.status.toUpperCase() === 'AVAILABLE';
     
     return (
       <Animated.View 
@@ -234,19 +253,29 @@ const StoreMenuPage = () => {
           <TextInput
             label="Item Name"
             value={name}
-            onChangeText={setName}
+            onChangeText={(text) => {
+              setName(text);
+              if (formErrors.name) setFormErrors(prev => ({ ...prev, name: undefined }));
+            }}
             mode="outlined"
+            error={!!formErrors.name}
             style={styles.formInput}
           />
+          {formErrors.name && <Text style={[styles.errorText, { color: theme.colors.error }]}>{formErrors.name}</Text>}
           
           <TextInput
             label="Price (₹)"
             value={price}
-            onChangeText={setPrice}
+            onChangeText={(text) => {
+              setPrice(text);
+              if (formErrors.price) setFormErrors(prev => ({ ...prev, price: undefined }));
+            }}
             mode="outlined"
             keyboardType="numeric"
+            error={!!formErrors.price}
             style={styles.formInput}
           />
+          {formErrors.price && <Text style={[styles.errorText, { color: theme.colors.error }]}>{formErrors.price}</Text>}
 
           <View style={styles.availabilityRow}>
             <Text style={{ fontWeight: '600', color: theme.colors.onSurface }}>Item Available</Text>
@@ -346,6 +375,12 @@ const styles = StyleSheet.create({
   saveBtn: {
     marginTop: 8,
     borderRadius: 12,
+  },
+  errorText: {
+    fontSize: 12,
+    marginTop: -12,
+    marginBottom: 12,
+    marginLeft: 4,
   },
 });
 

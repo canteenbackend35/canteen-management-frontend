@@ -1,5 +1,6 @@
 import { authService } from "@/features/auth/services/authService";
 import { storeService } from "@/features/store/services/storeService";
+import { updateStoreStatusSchema } from "@/lib/validators";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
@@ -29,10 +30,18 @@ const StoreProfilePage = () => {
     fetchProfile();
   }, []);
 
-  const toggleStoreStatus = async () => {
+  async function toggleStoreStatus() {
     try {
       setToggling(true);
-      const newStatus = profile.status === 'OPEN' ? 'CLOSED' : 'OPEN';
+      const currentStatus = profile?.status || 'CLOSED';
+      const newStatus = currentStatus === 'OPEN' ? 'CLOSED' : 'OPEN';
+      
+      // Validate with Zod
+      const validation = updateStoreStatusSchema.safeParse({ status: newStatus });
+      if (!validation.success) {
+        throw new Error(validation.error.issues[0].message);
+      }
+
       const response = await storeService.updateStatus(newStatus);
       
       if (response.success) {
@@ -46,7 +55,7 @@ const StoreProfilePage = () => {
     } finally {
       setToggling(false);
     }
-  };
+  }
 
   const handleLogout = () => {
     router.replace("/auth");

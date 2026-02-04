@@ -1,4 +1,5 @@
 import { authService } from "@/features/auth/services/authService";
+import { signupSchema } from "@/lib/validators";
 import * as Haptics from 'expo-haptics';
 import { Link, useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -26,28 +27,17 @@ export default function SignupScreen() {
   const handleSignup = async () => {
     setErrorMsg(null);
     
-    if (name.trim().length < 2) {
-      setErrorMsg("Please enter your full name.");
-      return;
-    }
+    const validation = signupSchema.safeParse({
+      phoneNo: phone,
+      role: "customer",
+      name,
+      email,
+      college,
+      course
+    });
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setErrorMsg("Please enter a valid email address.");
-      return;
-    }
-
-    if (college.trim().length < 2) {
-      setErrorMsg("Please enter your college name.");
-      return;
-    }
-
-    if (course.trim().length < 2) {
-      setErrorMsg("Please enter your course name.");
-      return;
-    }
-
-    if (!/^[0-9]{10}$/.test(phone)) {
-      setErrorMsg("Phone number must be exactly 10 digits.");
+    if (!validation.success) {
+      setErrorMsg(validation.error.issues[0].message);
       return;
     }
 

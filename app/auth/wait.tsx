@@ -1,4 +1,5 @@
 import { authService } from "@/features/auth/services/authService";
+import { verifyOtpSchema } from "@/lib/validators";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
@@ -17,8 +18,16 @@ export default function OTPVerificationScreen() {
   const theme = useTheme();
 
   const handleVerify = async () => {
-    if (otp.length !== 6) {
-      setErrorMsg("Please enter the 6-digit code.");
+    // Validate with Zod
+    const validation = verifyOtpSchema.safeParse({
+      phoneNo: phone,
+      otp,
+      reqId: currentReqId,
+      role: role as "customer" | "store"
+    });
+
+    if (!validation.success) {
+      setErrorMsg(validation.error.issues[0].message);
       return;
     }
 
