@@ -58,8 +58,8 @@ export default function LoginScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.headerContainer}>
-          <Text style={[styles.brandTitle, { color: theme.colors.primary }]}>Canteen</Text>
-          <Text style={[styles.brandSubtitle, { color: theme.colors.onSurfaceVariant }]}>Deliciousness delivered.</Text>
+          <Text style={[styles.brandTitle, { color: theme.colors.primary }]}>CraveCart</Text>
+          <Text style={[styles.brandSubtitle, { color: theme.colors.onSurfaceVariant }]}>Canteen, but faster.</Text>
         </View>
 
         <View style={styles.formContainer}>
@@ -125,7 +125,7 @@ export default function LoginScreen() {
           </Button>
 
           <View style={styles.signupContainer}>
-            <Text style={[styles.signupText, { color: theme.colors.onSurfaceVariant }]}>New to Canteen? </Text>
+            <Text style={[styles.signupText, { color: theme.colors.onSurfaceVariant }]}>New to CraveCart? </Text>
             <Link style={[styles.signupLink, { color: theme.colors.primary }]} href="/auth/signup" replace>
               Create Account
             </Link>

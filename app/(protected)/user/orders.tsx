@@ -1,15 +1,18 @@
-import { OrderCard } from "@/features/orders/components/OrderCard";
+import { LiveOrderCard } from "@/features/orders/components/LiveOrderCard";
+import { OrderDetailModal } from "@/features/orders/components/OrderDetailModal";
 import { useOrders } from "@/features/orders/hooks/useOrders";
+import { COMPONENT_STYLES, RADIUS, SPACING, TYPOGRAPHY } from "@/lib/theme";
 import { Order } from "@/types";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from "react-native";
-import { Button, IconButton, Text, useTheme } from "react-native-paper";
+import { Button, IconButton, Portal, Text, useTheme } from "react-native-paper";
 import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 
 const OrdersPage = () => {
   const router = useRouter();
   const theme = useTheme() as any;
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   
   const { 
     orders, 
@@ -30,21 +33,24 @@ const OrdersPage = () => {
         entering={FadeInDown.delay(index * 100).springify()} 
         layout={Layout.springify()}
       >
-        <OrderCard order={item}>
-          {item.order_otp && item.order_status !== 'DELIVERED' && item.order_status.toUpperCase() !== 'COMPLETED' && item.order_status !== 'CANCELLED' && (
-            <View style={[styles.otpContainer, { backgroundColor: theme.colors.primaryContainer + '40', borderColor: theme.colors.primary + '30' }]}>
-              <Text style={[styles.otpLabel, { color: theme.colors.onSurfaceVariant }]}>OTP:</Text>
-              <Text style={[styles.otpValue, { color: theme.colors.primary }]}>{item.order_otp}</Text>
-            </View>
-          )}
-        </OrderCard>
+        <LiveOrderCard 
+          order={item} 
+          onStatusChange={(status: string) => {
+            if (status === 'DELIVERED' || status === 'CANCELLED') {
+              // Refresh the whole list if an order is finished 
+              // so it moves to history naturally
+              onRefresh();
+            }
+          }}
+          onPress={() => setSelectedOrder(item)}
+        />
       </Animated.View>
     );
   };
 
   if (loading && !refreshing) {
     return (
-      <View style={[styles.container, styles.center, { backgroundColor: theme.colors.background }]}>
+      <View style={[COMPONENT_STYLES.centerContainer, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={[styles.loadingText, { color: theme.colors.onSurfaceVariant }]}>Fetching your orders...</Text>
       </View>
@@ -53,7 +59,7 @@ const OrdersPage = () => {
 
   if (error && !refreshing) {
     return (
-      <View style={[styles.container, styles.center, { backgroundColor: theme.colors.background }]}>
+      <View style={[COMPONENT_STYLES.centerContainer, { backgroundColor: theme.colors.background }]}>
         <IconButton icon="alert-circle-outline" size={60} iconColor={theme.colors.error} />
         <Text style={[styles.errorText, { color: theme.colors.error }]}>{error}</Text>
         <Button
@@ -69,7 +75,7 @@ const OrdersPage = () => {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[COMPONENT_STYLES.container, { backgroundColor: theme.colors.background }]}>
       <FlatList
         data={activeOrders}
         keyExtractor={(item) => item.order_id.toString()}
@@ -77,17 +83,17 @@ const OrdersPage = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} tintColor={theme.colors.primary} />
         }
         renderItem={renderOrder}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={COMPONENT_STYLES.listContent}
         ListHeaderComponent={
           <Text style={[styles.heading, { color: theme.colors.onSurface }]}>
             My Live Orders
           </Text>
         }
-        ListHeaderComponentStyle={styles.listHeader}
+        ListHeaderComponentStyle={COMPONENT_STYLES.listHeader}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
+          <View style={COMPONENT_STYLES.emptyContainer}>
             <IconButton icon="package-variant" size={60} iconColor={theme.colors.outline} />
-            <Text style={[styles.emptyText, { color: theme.colors.onSurfaceVariant }]}>You haven't placed any orders yet</Text>
+            <Text style={[COMPONENT_STYLES.emptyText, { color: theme.colors.onSurfaceVariant }]}>You haven't placed any orders yet</Text>
             <Button 
               mode="contained-tonal" 
               onPress={() => router.replace('/(protected)/user/stores')}
@@ -100,39 +106,44 @@ const OrdersPage = () => {
           </View>
         }
       />
+      <Portal>
+        <OrderDetailModal
+          order={selectedOrder}
+          visible={!!selectedOrder}
+          hideCustomer={true}
+          onDismiss={() => setSelectedOrder(null)}
+        >
+
+        </OrderDetailModal>
+      </Portal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  center: { justifyContent: "center", alignItems: "center" },
   heading: { 
-    fontSize: 22, 
-    fontWeight: "900", 
-    letterSpacing: -1,
-    paddingHorizontal: 16
+    ...TYPOGRAPHY.H1,
   },
-  otpContainer: { 
-    marginTop: 4, 
-    padding: 8, 
-    borderRadius: 8, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    borderWidth: 1, 
-    borderStyle: 'dashed' 
+  loadingText: { 
+    ...TYPOGRAPHY.SUBTITLE, 
+    marginTop: SPACING.M,
   },
-  otpLabel: { fontSize: 13, fontWeight: '700', marginRight: 8 },
-  otpValue: { fontSize: 18, fontWeight: '900', letterSpacing: 4 },
-  listContent: { paddingBottom: 40, paddingTop: 10 },
-  listHeader: { marginBottom: 20, marginTop: 10 },
-  loadingText: { marginTop: 12, fontSize: 16, fontWeight: '500' },
-  errorText: { marginBottom: 16, textAlign: "center", fontSize: 16 },
-  retryButton: { borderRadius: 14 },
-  emptyContainer: { alignItems: "center", marginTop: 80, paddingHorizontal: 40 },
-  emptyText: { textAlign: "center", fontSize: 17, fontWeight: '600', marginTop: 8, marginBottom: 24 },
-  browseBtn: { borderRadius: 12, paddingHorizontal: 16 },
+  errorText: { 
+    ...TYPOGRAPHY.SUBTITLE, 
+    marginBottom: SPACING.L, 
+    textAlign: "center",
+  },
+  retryButton: { 
+    borderRadius: RADIUS.L,
+  },
+  browseBtn: { 
+    borderRadius: RADIUS.M, 
+    paddingHorizontal: SPACING.L,
+  },
+  trackButton: {
+    borderRadius: RADIUS.L,
+    marginTop: SPACING.M,
+  },
 });
 
 export default OrdersPage;

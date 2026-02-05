@@ -1,6 +1,6 @@
 import { api, API_ENDPOINTS } from "@/lib/api-client";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { BottomNavigation, useTheme } from "react-native-paper";
@@ -34,6 +34,15 @@ const UserLayout = () => {
     };
     checkRole();
   }, []);
+
+  const { tab } = useLocalSearchParams();
+
+  React.useEffect(() => {
+    if (tab === 'orders' || tab === 'liveOrders') setIndex(1);
+    else if (tab === 'history') setIndex(2);
+    else if (tab === 'profile') setIndex(3);
+    else if (tab === 'stores') setIndex(0);
+  }, [tab]);
 
   const [routes] = useState([
     { key: "stores", title: "Stores", icon: "store" },

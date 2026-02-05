@@ -80,7 +80,10 @@ export default function StoreListScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Text style={[styles.header, { color: theme.colors.onSurface }]}>Available Stores</Text>
+      <View style={styles.headerContainer}>
+        <Text style={[styles.brandTitle, { color: theme.colors.primary }]}>CraveCart</Text>
+        <Text style={[styles.header, { color: theme.colors.onSurface }]}>Available Stores</Text>
+      </View>
 
       <FlatList
         data={stores}
@@ -145,13 +148,22 @@ export default function StoreListScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { justifyContent: "center", alignItems: "center" },
+  headerContainer: {
+    paddingHorizontal: 20,
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  brandTitle: {
+    fontSize: 28,
+    fontWeight: "900",
+    letterSpacing: -1.5,
+  },
   header: { 
-    fontSize: 22, 
-    fontWeight: "900", 
-    marginBottom: 20, 
-    marginTop: 10, 
-    letterSpacing: -1,
-    paddingHorizontal: 20 
+    fontSize: 15, 
+    fontWeight: "600",
+    opacity: 0.6,
+    letterSpacing: 0,
+    marginTop: -2,
   },
   card: { 
     marginBottom: 12, 

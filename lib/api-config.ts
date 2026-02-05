@@ -1,5 +1,5 @@
 // 🚀 Toggle this for Production vs Development
-const DEV_URL = "http://172.26.216.27:3000";
+const DEV_URL = "http://localhost:3000";
 const PROD_URL = "https://canteen-management-backend-5qxg.onrender.com"; // ⬅️ Replace with your live backend URL
 
 const BASE_URL = __DEV__ ? DEV_URL : PROD_URL;
@@ -40,6 +40,7 @@ export const API_ENDPOINTS = {
     READY: (orderId: number | string) => `/api/orders/${orderId}/ready`,
     COMPLETE: (orderId: number | string) => `/api/orders/${orderId}/complete`,
     CANCEL: (orderId: number | string) => `/api/orders/${orderId}/cancel`,
+    WATCH: (orderId: number | string) => `/api/orders/${orderId}/watch`,
   },
   // 5. Menu Management - /api/menu
   MENU_MGMT: {
@@ -59,3 +60,6 @@ export function getApiUrl(endpoint: string): string {
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
   return `${BASE_URL}/${cleanEndpoint}`;
 }
+
+export const ORDER_WATCH_URL = (orderId: number | string) => getApiUrl(API_ENDPOINTS.ORDERS.WATCH(orderId));
+export const STORE_WATCH_URL = () => getApiUrl(API_ENDPOINTS.STORES.ORDERS + "/watch");

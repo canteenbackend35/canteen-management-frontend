@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "canteen-management-frontend",
-    "slug": "canteen-management-frontend",
+    "name": "CraveCart",
+    "slug": "cravecart",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -49,9 +49,9 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#000000",
+          "backgroundColor": "#030712",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#030712"
           }
         }
       ],

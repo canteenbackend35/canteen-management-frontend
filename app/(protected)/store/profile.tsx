@@ -37,12 +37,12 @@ const StoreProfilePage = () => {
       const newStatus = currentStatus === 'OPEN' ? 'CLOSED' : 'OPEN';
       
       // Validate with Zod
-      const validation = updateStoreStatusSchema.safeParse({ status: newStatus });
+      const validation = updateStoreStatusSchema.safeParse({ status: newStatus.toLowerCase() });
       if (!validation.success) {
         throw new Error(validation.error.issues[0].message);
       }
 
-      const response = await storeService.updateStatus(newStatus);
+      const response = await storeService.updateStatus(newStatus.toLowerCase() as 'open' | 'closed');
       
       if (response.success) {
         setProfile({ ...profile, status: newStatus });
@@ -72,7 +72,7 @@ const StoreProfilePage = () => {
   // Map backend fields to UI labels
   const storeName = profile?.store_name || profile?.name || "Canteen Owner";
   const storePhone = profile?.phone_no || profile?.phone || "N/A";
-  const businessId = profile?.store_id ? `STR-${profile.store_id}` : "N/A";
+
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -89,23 +89,6 @@ const StoreProfilePage = () => {
       </View>
 
       <View style={styles.content}>
-        <Card style={[styles.card, { borderColor: theme.colors.outline }]} elevation={0}>
-          <Card.Content>
-            <List.Item
-              title="Business Identity"
-              description={businessId}
-              left={props => <List.Icon {...props} icon="badge-account-horizontal-outline" />}
-            />
-            <Divider />
-            <List.Item
-              title="Payment Setup"
-              description={profile?.payment_details || "Standard QR Payment"}
-              left={props => <List.Icon {...props} icon="qrcode" />}
-              right={props => <List.Icon {...props} icon="chevron-right" />}
-            />
-          </Card.Content>
-        </Card>
-
         <Card style={[styles.card, { borderColor: theme.colors.outline }]} elevation={0}>
           <Card.Content>
             <List.Item

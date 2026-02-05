@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Text, useTheme } from 'react-native-paper';
@@ -20,23 +20,38 @@ interface MultiStepSliderProps {
   compact?: boolean;
 }
 
-const STEPS: OrderStatusType[] = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED'];
+const STEPS: OrderStatusType[] = ['CONFIRMED', 'PREPARING', 'READY', 'DELIVERED'];
+
+const STATUS_MAP: Record<string, number> = {
+  'CONFIRMED': 0,
+  'PREPARING': 1,
+  'READY': 2,
+  'DELIVERED': 3,
+  'PENDING': 0,   // Fallback: If shown, stay at start
+  'CANCELLED': 0, // Fallback
+};
+
 const STEP_LABELS: Record<string, string> = {
-  PENDING: 'New',
-  CONFIRMED: 'Confirm',
-  PREPARING: 'Prep',
+  CONFIRMED: 'CONFIRMED',
+  PREPARING: 'PREP',
   READY: 'READY',
-  DELIVERED: 'Verify',
-  CANCELLED: 'Canceled'
+  DELIVERED: 'VERIFY',
 };
 
 export const MultiStepSlider = memo(({ currentStatus, onStatusChange, containerStyle, compact = false }: MultiStepSliderProps) => {
   const theme = useTheme();
   
-  // Case-insensitive matching to prevent index -1 (reset to New) issues
-  const normalizedStatus = (currentStatus || 'PENDING').toUpperCase() as OrderStatusType;
-  const currentIndex = STEPS.indexOf(normalizedStatus === 'CANCELLED' ? 'PENDING' : normalizedStatus);
-  const normalizedIndex = Math.max(0, currentIndex);
+  // Robust status normalization: Trim whitespace and handle case sensitivity
+  const normalizedStatus = (currentStatus || '').trim().toUpperCase();
+  
+  // Use map for safe indexing; fallback to 0 (NEW) only if completely unknown
+  const normalizedIndex = useMemo(() => {
+    if (normalizedStatus in STATUS_MAP) {
+      return STATUS_MAP[normalizedStatus];
+    }
+    console.warn(`[MultiStepSlider] Received unknown status: "${currentStatus}"`);
+    return 0;
+  }, [normalizedStatus, currentStatus]);
 
   const HEIGHT = compact ? 40 : 64;
   const THUMB_SIZE = compact ? 32 : 48;

@@ -57,7 +57,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const addItem = (newItem: Omit<CartItem, 'quantity'>) => {
     setItems((prevItems) => {
       // 1. Single-Store Enforcement
-      if (prevItems.length > 0 && prevItems[0].storeId !== newItem.storeId) {
+      if (prevItems.length > 0 && String(prevItems[0].storeId) !== String(newItem.storeId)) {
         // In an industrial app, we would ideally show a confirm dialog.
         // For now, we clear the cart to switch stores.
         return [{ ...newItem, quantity: 1 }];

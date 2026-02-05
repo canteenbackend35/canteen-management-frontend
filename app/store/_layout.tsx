@@ -2,40 +2,19 @@
 import { Slot, useRouter } from "expo-router";
 import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
-import { IconButton, Text, useTheme } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme } from "react-native-paper";
 
 export default function StoreLayout() {
   const theme = useTheme();
   const router = useRouter();
 
   return (
-    <SafeAreaView
-      edges={["top", "bottom"]}
-      style={[styles.safeArea, { backgroundColor: theme.colors.background }]}
-    >
-      {/* Top bar */}
-      <View style={[styles.topBar, { borderBottomColor: theme.colors.outline }]}>
-        <IconButton
-          icon="arrow-left"
-          size={24}
-          onPress={() => router.back()}
-          iconColor={theme.colors.onSurface}
-        />
-        <Text
-          numberOfLines={1}
-          style={[styles.title, { color: theme.colors.onSurface }]}
-        >
-          Store Menu
-        </Text>
-        <View style={styles.rightSpacer} />
-      </View>
-
+    <View style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
       {/* Child routes render here (e.g. [storeid].tsx) */}
       <View style={styles.content}>
         <Slot />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

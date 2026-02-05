@@ -1,12 +1,15 @@
 import { MultiStepSlider, OrderStatusType } from "@/features/orders/components/MultiStepSlider";
 import { OrderCard } from "@/features/orders/components/OrderCard";
+import { OrderDetailModal } from "@/features/orders/components/OrderDetailModal";
 import { useOrderActions } from "@/features/orders/hooks/useOrderActions";
 import { useOrders } from "@/features/orders/hooks/useOrders";
+import { useStoreWatch } from "@/features/store/hooks/useStoreWatch";
 import { verifyOrderSchema } from "@/lib/validators";
 import { Order } from "@/types";
-import React, { useMemo, useState } from "react";
-import { FlatList, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import { Avatar, Button, Divider, IconButton, Modal, Portal, Text, TextInput, useTheme } from "react-native-paper";
+import * as Haptics from 'expo-haptics';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
+import { Button, IconButton, Modal, Portal, Text, TextInput, useTheme } from "react-native-paper";
 import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 
 const StoreKitchenView = () => {
@@ -14,11 +17,47 @@ const StoreKitchenView = () => {
   
   const { 
     orders, 
+    setOrders,
     loading, 
     refreshing, 
     onRefresh, 
     fetchOrders 
   } = useOrders('store');
+
+  const onNewOrder = useCallback((order: Order) => {
+    console.log("🔥 onNewOrder triggered in UI:", order.order_id);
+    
+    // 🔔 Alert the user
+    try {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      console.warn("Haptics failed", e);
+    }
+    
+    // 🆕 Add to list if not already there
+    setOrders((prev: Order[]) => {
+      const exists = prev.some((o: Order) => o.order_id === order.order_id);
+      if (exists) return prev;
+      return [order, ...prev];
+    });
+  }, [setOrders]);
+
+  const onOrderUpdate = useCallback((data: { order_id: number, order_status: string }) => {
+    console.log("🔥 onOrderUpdate triggered in UI:", data.order_id, data.order_status);
+    setOrders((prev: Order[]) => {
+      return prev.map((o: Order) => 
+        o.order_id === data.order_id 
+          ? { ...o, order_status: data.order_status as any } 
+          : o
+      );
+    });
+  }, [setOrders]);
+
+  const { isConnected: sseConnected } = useStoreWatch(onNewOrder, onOrderUpdate);
+
+  useEffect(() => {
+    console.log("📡 SSE Connection Status:", sseConnected ? "CONNECTED" : "DISCONNECTED");
+  }, [sseConnected]);
 
   const { handleAction, isProcessing } = useOrderActions(() => {
     fetchOrders();
@@ -34,8 +73,8 @@ const StoreKitchenView = () => {
 
   const kitchenOrders = useMemo(() => {
     return orders
-      .filter(o => ['PENDING', 'CONFIRMED', 'PREPARING', 'READY'].includes(o.order_status.toUpperCase()))
-      .sort((a, b) => new Date(a.order_date).getTime() - new Date(b.order_date).getTime());
+      .filter((o: Order) => ['PENDING', 'CONFIRMED', 'PREPARING', 'READY'].includes(o.order_status.toUpperCase()))
+      .sort((a: Order, b: Order) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime());
   }, [orders]);
 
   async function onVerifyOtp() {
@@ -67,7 +106,7 @@ const StoreKitchenView = () => {
         <OrderCard 
           order={item} 
           onPress={() => setSelectedOrder(item)}
-          hideCustomer={true}
+          hideCustomer={false}
         >
           {item.order_status.toUpperCase() === 'PENDING' ? (
             <View style={styles.pendingActionRow}>
@@ -127,8 +166,14 @@ const StoreKitchenView = () => {
           <View style={styles.listHeader}>
             <Text style={[styles.heading, { color: theme.colors.onSurface }]}>Active Kitchen</Text>
             <View style={styles.headerStats}>
+               <View style={styles.liveIndicator}>
+                 <View style={[styles.liveDot, { backgroundColor: sseConnected ? '#4CAF50' : '#FF5252' }]} />
+                 <Text style={[styles.liveText, { color: sseConnected ? '#4CAF50' : '#FF5252' }]}>
+                   {sseConnected ? "LIVE" : "OFFLINE"}
+                 </Text>
+               </View>
                <Text style={[styles.statBadge, { backgroundColor: theme.colors.primaryContainer, color: theme.colors.primary }]}>
-                 {kitchenOrders.length} Pending
+                 {kitchenOrders.length} New
                </Text>
             </View>
           </View>
@@ -142,77 +187,35 @@ const StoreKitchenView = () => {
       />
 
       <Portal>
-        {/* Order Details Modal */}
-        <Modal
+        <OrderDetailModal
           visible={!!selectedOrder}
+          order={selectedOrder}
           onDismiss={() => setSelectedOrder(null)}
-          contentContainerStyle={[
-            styles.modalContent, 
-            { backgroundColor: theme.colors.surface }
-          ]}
         >
           {selectedOrder && (
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: theme.colors.onSurface }]}>Order Details #{selectedOrder.order_id}</Text>
-                <IconButton icon="close" onPress={() => setSelectedOrder(null)} />
-              </View>
+            <>
+              <Button 
+                mode="contained" 
+                onPress={() => setSelectedOrder(null)}
+                style={styles.modalActionBtn}
+              >
+                Done
+              </Button>
 
-              <View style={styles.customerDetailRow}>
-                <Avatar.Text 
-                  size={40} 
-                  label={selectedOrder.customer?.name?.charAt(0) || "C"} 
-                  style={{ backgroundColor: theme.colors.primaryContainer }}
-                  labelStyle={{ color: theme.colors.primary }}
-                />
-                <View style={{ marginLeft: 12 }}>
-                  <Text style={[styles.detailName, { color: theme.colors.onSurface }]}>{selectedOrder.customer?.name || "Customer"}</Text>
-                  <Text style={[styles.detailPhone, { color: theme.colors.onSurfaceVariant }]}>+91 {selectedOrder.customer?.phone_no}</Text>
-                </View>
-              </View>
-
-              <Divider style={styles.modalDivider} />
-
-              <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>Kitchen Ticket</Text>
-              <View style={styles.detailItemsList}>
-                {(selectedOrder.items || []).map((item: any, idx) => (
-                  <View key={idx} style={styles.detailItemRow}>
-                    <Text style={[styles.detailItemText, { color: theme.colors.onSurface }]}>
-                      {item.quantity}x {item.menu_item?.name || item.name}
-                    </Text>
-                    <Text style={[styles.detailItemPrice, { color: theme.colors.onSurfaceVariant }]}>
-                      ₹{(item.quantity * (item.menu_item?.price || item.price)).toFixed(2)}
-                    </Text>
-                  </View>
-                ))}
-                <View style={[styles.detailTotalRow, { borderTopColor: theme.colors.outline }]}>
-                  <Text style={[styles.detailTotalLabel, { color: theme.colors.onSurface }]}>Grand Total</Text>
-                  <Text style={[styles.detailTotalValue, { color: theme.colors.primary }]}>₹{selectedOrder.total_price.toFixed(2)}</Text>
-                </View>
-              </View>
-
-              <View style={styles.modalActions}>
-                <Button 
-                  mode="contained" 
-                  onPress={() => setSelectedOrder(null)}
-                  style={styles.modalActionBtn}
-                >
-                  Close Details
-                </Button>
-
-                <Button 
-                  mode="outlined" 
-                  onPress={() => handleAction(selectedOrder.order_id, 'CANCEL')}
-                  style={[styles.modalCancelBtn, { borderColor: theme.colors.error }]}
-                  textColor={theme.colors.error}
-                  icon="close-circle-outline"
-                >
-                  Reject & Cancel Order
-                </Button>
-              </View>
-            </ScrollView>
+              <Button 
+                mode="outlined" 
+                onPress={() => handleAction(selectedOrder.order_id, 'CANCEL')}
+                loading={isProcessing === selectedOrder.order_id}
+                disabled={isProcessing !== null}
+                style={[styles.modalCancelBtn, { borderColor: theme.colors.error }]}
+                textColor={theme.colors.error}
+                icon="close-circle-outline"
+              >
+                Reject & Cancel Order
+              </Button>
+            </>
           )}
-        </Modal>
+        </OrderDetailModal>
 
         {/* Verification Modal */}
         <Modal
@@ -272,7 +275,10 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   listHeader: { marginBottom: 16, marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16 },
   heading: { fontSize: 22, fontWeight: "900", letterSpacing: -1 },
-  headerStats: {},
+  headerStats: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  liveIndicator: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.05)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, gap: 6 },
+  liveDot: { width: 8, height: 8, borderRadius: 4 },
+  liveText: { fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
   statBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, fontSize: 12, fontWeight: '800' },
   
   pendingActionRow: {

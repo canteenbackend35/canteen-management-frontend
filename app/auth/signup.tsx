@@ -62,7 +62,7 @@ export default function SignupScreen() {
       // Immediately open OTP entry page
       router.push({
         pathname: "/auth/wait",
-        params: { phone, reqId: response.reqId },
+        params: { phone, reqId: response.reqId, role: "customer" },
       });
     } catch (error: any) {
       setErrorMsg(error.message || "Something went wrong. Try again.");
@@ -79,7 +79,7 @@ export default function SignupScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
           <View style={styles.headerContainer}>
-            <Text style={[styles.title, { color: theme.colors.onSurface }]}>Join Canteen</Text>
+            <Text style={[styles.title, { color: theme.colors.onSurface }]}>Join CraveCart</Text>
             <Text style={[styles.subtitle, { color: theme.colors.onSurfaceVariant }]}>Create an account to start ordering.</Text>
           </View>
 

@@ -17,6 +17,13 @@ export const orderService = {
   },
 
   /**
+   * Fetch specific order details
+   */
+  async getOrderDetails(orderId: number | string) {
+    return api.get<{ success: boolean; order: Order }>(API_ENDPOINTS.ORDERS.DETAILS(orderId));
+  },
+
+  /**
    * Create a new order
    */
   async createOrder(orderData: any) {

@@ -1,13 +1,15 @@
 import { OrderCard } from "@/features/orders/components/OrderCard";
+import { OrderDetailModal } from "@/features/orders/components/OrderDetailModal";
 import { useOrders } from "@/features/orders/hooks/useOrders";
 import { Order } from "@/types";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { ActivityIndicator, RefreshControl, SectionList, StyleSheet, View } from "react-native";
-import { Card, Chip, Divider, Text, useTheme } from "react-native-paper";
+import { Chip, Divider, Portal, Text, useTheme } from "react-native-paper";
 import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 
 const StoreHistoryPage = () => {
   const theme = useTheme() as any;
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   
   const { 
     orders, 
@@ -67,6 +69,8 @@ const StoreHistoryPage = () => {
         <OrderCard 
           order={item} 
           showAbsoluteTime={true}
+          showPrice={true}
+          onPress={() => setSelectedOrder(item)}
           style={{ 
             opacity: item.order_status.toUpperCase() === 'CANCELLED' ? 0.7 : 1,
             marginHorizontal: 16,
@@ -126,18 +130,6 @@ const StoreHistoryPage = () => {
                 </View>
               </View>
             </View>
-            
-            <Card style={[styles.summaryCard, { backgroundColor: theme.colors.primaryContainer }]} elevation={0}>
-              <Card.Content style={styles.summaryContent}>
-                <View>
-                  <Text style={[styles.summaryLabel, { color: theme.colors.onPrimaryContainer }]}>Today's Sales</Text>
-                  <Text style={[styles.summaryValue, { color: theme.colors.onPrimaryContainer }]}>₹{dailyTotal.toFixed(2)}</Text>
-                </View>
-                <View style={styles.summaryStats}>
-                  <Chip icon="check-circle" style={styles.statChip}>{dailyCount} Orders</Chip>
-                </View>
-              </Card.Content>
-            </Card>
           </>
         }
         ListEmptyComponent={
@@ -146,6 +138,13 @@ const StoreHistoryPage = () => {
           </View>
         }
       />
+      <Portal>
+        <OrderDetailModal
+          order={selectedOrder}
+          visible={!!selectedOrder}
+          onDismiss={() => setSelectedOrder(null)}
+        />
+      </Portal>
     </View>
   );
 };

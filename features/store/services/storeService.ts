@@ -14,7 +14,7 @@ export const storeService = {
   /**
    * Update store operational status (OPEN/CLOSED)
    */
-  async updateStatus(status: 'OPEN' | 'CLOSED') {
+  async updateStatus(status: 'open' | 'closed') {
     return api.patch(API_ENDPOINTS.STORES.UPDATE_STATUS, { status });
   }
 };

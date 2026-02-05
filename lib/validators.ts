@@ -23,7 +23,7 @@ export const sendOtpSchema = z.object({
 
 export const verifyOtpSchema = z.object({
   phoneNo: phoneSchema,
-  otp: z.string().min(4, "OTP is required"),
+  otp: otpSchema(6),
   reqId: z.string().min(1, "Request ID is required"),
   role: roleSchema,
 });
@@ -85,7 +85,7 @@ export const verifyOrderSchema = z.object({
  * Store Schemas
  */
 export const updateStoreStatusSchema = z.object({
-  status: z.enum(["OPEN", "CLOSED"], {
-    message: "Status must be either OPEN or CLOSED",
+  status: z.enum(["open", "closed"], {
+    message: "Status must be either open or closed",
   }),
 });

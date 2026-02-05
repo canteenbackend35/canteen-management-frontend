@@ -1,3 +1,4 @@
+export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'DELIVERED' | 'CANCELLED' | 'COMPLETED';
 export type UserRole = 'customer' | 'store';
 
 export interface User {
@@ -42,7 +43,7 @@ export interface Order {
   store_id: number;
   total_price: number;
   payment_id?: string;
-  order_status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'ON_THE_WAY' | 'DELIVERED' | 'CANCELLED';
+  order_status: OrderStatus;
   order_date: string;
   order_otp?: string;
   items: OrderItem[];

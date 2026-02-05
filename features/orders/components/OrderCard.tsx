@@ -12,13 +12,14 @@ interface OrderCardProps {
   style?: ViewStyle;
   showAbsoluteTime?: boolean;
   hideCustomer?: boolean;
+  showPrice?: boolean;
 }
 
 /**
  * Core Domain Component for Order representation.
  * Standardizes the look and feel across the app while allowing flexible actions.
  */
-export const OrderCard = ({ order, onPress, children, style, showAbsoluteTime, hideCustomer }: OrderCardProps) => {
+export const OrderCard = ({ order, onPress, children, style, showAbsoluteTime, hideCustomer, showPrice }: OrderCardProps) => {
   const theme = useTheme();
   
   const timeAgo = useMemo(() => {
@@ -70,11 +71,6 @@ export const OrderCard = ({ order, onPress, children, style, showAbsoluteTime, h
           <Text style={[styles.timeText, { color: isOverdue ? theme.colors.error : theme.colors.onSurfaceVariant }]}>
             {absoluteTime}
           </Text>
-          {!showAbsoluteTime && (
-            <Text style={[styles.timeAgoText, { color: isOverdue ? theme.colors.error : theme.colors.onSurfaceVariant }]}>
-              ({timeAgo})
-            </Text>
-          )}
           <StatusBadge status={order.order_status} style={styles.statusBadge} />
         </View>
 
@@ -85,12 +81,14 @@ export const OrderCard = ({ order, onPress, children, style, showAbsoluteTime, h
         <View style={styles.bottomRow}>
           {!hideCustomer && (
             <Text style={[styles.customer, { color: theme.colors.onSurfaceVariant }]}>
-              {order.customer?.name || "Walk-in"}
+              {order.customer?.name || ""}
             </Text>
           )}
-          <Text style={[styles.price, { color: theme.colors.primary }]}>
-            ₹{order.total_price}
-          </Text>
+          {showPrice && (
+            <Text style={[styles.price, { color: theme.colors.primary, marginLeft: 'auto' }]}>
+              ₹{(order.total_price || 0).toFixed(2)}
+            </Text>
+          )}
         </View>
       </Pressable>
 

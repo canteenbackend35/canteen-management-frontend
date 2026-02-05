@@ -4,7 +4,7 @@ import { MenuItem } from "@/types";
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from "react-native";
-import { Button, Card, FAB, IconButton, Modal, Portal, Switch, Text, TextInput, useTheme } from "react-native-paper";
+import { Button, Card, FAB, IconButton, Modal, Portal, Snackbar, Switch, Text, TextInput, useTheme } from "react-native-paper";
 import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 
 const StoreMenuPage = () => {
@@ -12,7 +12,7 @@ const StoreMenuPage = () => {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
 
   // Form State
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -30,7 +30,7 @@ const StoreMenuPage = () => {
   const fetchMenu = async () => {
     try {
       setLoading(true);
-      setError(null);
+
       const meResponse = await api.get(API_ENDPOINTS.AUTH.ME);
       const storeId = meResponse.store_id || meResponse.user?.store_id;
 
@@ -42,7 +42,12 @@ const StoreMenuPage = () => {
       const menuData = Array.isArray(response) ? response : (response.menu || []);
       setItems(menuData);
     } catch (err: any) {
-      setError(err.message || "Failed to load menu");
+      const displayMessage = err.message?.includes("]: ") 
+        ? err.message.split("]: ").pop().replace(/^Error: /, "") 
+        : (err.message || "Failed to load menu");
+      
+      setSnackbarMessage(displayMessage);
+      setSnackbarVisible(true);
       console.error("Error fetching menu:", err);
     } finally {
       setLoading(false);
@@ -68,6 +73,12 @@ const StoreMenuPage = () => {
         status: newStatus
       });
     } catch (err: any) {
+      const displayMessage = err.message?.includes("]: ") 
+        ? err.message.split("]: ").pop().replace(/^Error: /, "") 
+        : (err.message || "Failed to toggle availability");
+      
+      setSnackbarMessage(displayMessage);
+      setSnackbarVisible(true);
       console.error("Failed to toggle availability:", err);
       setItems(prev => prev.map(item => 
         item.menu_item_id === itemId ? { ...item, status: currentStatus } : item
@@ -137,25 +148,50 @@ const StoreMenuPage = () => {
       await fetchMenu();
       closeModal();
     } catch (err: any) {
+      const displayMessage = err.message?.includes("]: ") 
+        ? err.message.split("]: ").pop().replace(/^Error: /, "") 
+        : (err.message || "Failed to save item");
+      
+      setSnackbarMessage(displayMessage);
+      setSnackbarVisible(true);
       console.error("Failed to save menu item:", err);
-      setError(err.message || "Failed to save item");
     } finally {
       setSaving(false);
     }
   };
 
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+
   const handleDelete = async (itemId: number) => {
     try {
+      setDeletingId(itemId);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       await api.delete(API_ENDPOINTS.MENU_MGMT.DELETE(itemId));
       setItems(prev => prev.filter(i => i.menu_item_id !== itemId));
     } catch (err: any) {
-      console.error("Failed to delete item:", err);
+      // Clean up the error message to remove technical API prefixes like "API Request failed [DELETE ...]: "
+      let displayMessage = err.message || "Could not delete item. Please try again.";
+      if (displayMessage.includes("]: ")) {
+        displayMessage = displayMessage.split("]: ").pop() || displayMessage;
+      }
+      // Remove "Error: " prefix if present from new Error()
+      displayMessage = displayMessage.replace(/^Error: /, "");
+
+      console.error("Cleanup Delete Error:", displayMessage);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      
+      setSnackbarMessage(displayMessage);
+      setSnackbarVisible(true);
+    } finally {
+      setDeletingId(null);
     }
   };
 
   const renderItem = ({ item, index }: { item: MenuItem, index: number }) => {
     const isAvailable = item.status.toUpperCase() === 'AVAILABLE';
+    const isDeleting = deletingId === item.menu_item_id;
     
     return (
       <Animated.View 
@@ -183,19 +219,28 @@ const StoreMenuPage = () => {
                 size={20} 
                 iconColor={theme.colors.onSurfaceVariant} 
                 onPress={() => openModal(item)}
+                disabled={isDeleting || saving}
               />
-              <IconButton 
-                icon="delete-outline" 
-                size={20} 
-                iconColor={theme.colors.error} 
-                onPress={() => handleDelete(item.menu_item_id)}
-              />
+              {isDeleting ? (
+                <View style={{ width: 40, alignItems: 'center' }}>
+                  <ActivityIndicator size={16} color={theme.colors.error} />
+                </View>
+              ) : (
+                <IconButton 
+                  icon="delete-outline" 
+                  size={20} 
+                  iconColor={theme.colors.error} 
+                  onPress={() => handleDelete(item.menu_item_id)}
+                  disabled={saving}
+                />
+              )}
               <View style={styles.divider} />
               <View style={styles.toggleSection}>
                 <Switch 
                   value={isAvailable} 
                   onValueChange={() => toggleAvailability(item.menu_item_id, item.status)}
                   color={theme.colors.primary}
+                  disabled={isDeleting || saving}
                 />
               </View>
             </View>
@@ -302,6 +347,22 @@ const StoreMenuPage = () => {
           </Button>
         </Modal>
       </Portal>
+
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={5000}
+        action={{
+          label: 'Dismiss',
+          onPress: () => setSnackbarVisible(false),
+        }}
+        style={{ backgroundColor: theme.colors.errorContainer }}
+        theme={{ colors: { accent: theme.colors.onErrorContainer } }}
+      >
+        <Text style={{ color: theme.colors.onErrorContainer, fontWeight: '600' }}>
+          {snackbarMessage}
+        </Text>
+      </Snackbar>
     </View>
   );
 };

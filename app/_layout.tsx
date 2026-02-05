@@ -2,11 +2,12 @@ import { useFonts } from 'expo-font';
 import { Stack } from "expo-router";
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, useColorScheme, View } from "react-native";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider as PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { BrandSplashScreen } from "../components/BrandSplashScreen";
 import { darkTheme, lightTheme } from "../constants/theme";
 import { CartProvider } from "../context/CartContext";
 
@@ -16,6 +17,7 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const theme = colorScheme === "dark" ? darkTheme : lightTheme;
+  const [appReady, setAppReady] = useState(false);
 
   const [fontsLoaded] = useFonts({
     // Load Material Community Icons font
@@ -24,12 +26,17 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded) {
-      SplashScreen.hideAsync();
+      // Small artificial delay to let the animation play out
+      const timer = setTimeout(() => {
+        setAppReady(true);
+        SplashScreen.hideAsync();
+      }, 2500);
+      return () => clearTimeout(timer);
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
-    return null;
+  if (!appReady) {
+    return <BrandSplashScreen />;
   }
 
   return (

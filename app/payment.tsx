@@ -1,9 +1,10 @@
+import { COMPONENT_STYLES, RADIUS, SPACING, TYPOGRAPHY } from '@/lib/theme';
 import { createOrderSchema } from '@/lib/validators';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Card, Divider, IconButton, List, Surface, Text, useTheme } from 'react-native-paper';
+import { Button, Card, Divider, IconButton, List, Modal, Portal, Surface, Text, useTheme } from 'react-native-paper';
 import { useCart } from '../context/CartContext';
 import { api, API_ENDPOINTS } from '../lib/api-client';
 
@@ -15,9 +16,13 @@ export default function PaymentScreen() {
   const [validating, setValidating] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [unavailableItems, setUnavailableItems] = useState<number[]>([]);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Industrial Grade Check: Validate cart items against live backend data
   React.useEffect(() => {
+    if (isRedirecting) return;
+    
     const validateCart = async () => {
       if (!currentStoreId) return;
       try {
@@ -54,14 +59,13 @@ export default function PaymentScreen() {
 
       } catch (err) {
         console.error("Validation error:", err);
-        // We don't block if API fails, but ideally we should.
       } finally {
         setValidating(false);
       }
     };
 
     validateCart();
-  }, [currentStoreId, items]);
+  }, [currentStoreId, items, isRedirecting]);
 
   const handlePlaceOrder = async () => {
     if (!currentStoreId) {
@@ -88,24 +92,36 @@ export default function PaymentScreen() {
 
       const response = await api.post(API_ENDPOINTS.ORDERS.CREATE, orderData, true);
 
-      if (response.success) {
-        const orderOtp = response.order_otp;
+      // Lenient check for success
+      if (response && (response.success || response.order_id || response.order_otp)) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         
+        // 1. Set Success States
+        setShowSuccessModal(true);
+        setIsRedirecting(true);
+        
+        // 2. Clear Cart
         clearCart();
         
-        Alert.alert(
-          "Success!",
-          `Order placed! Your OTP is ${orderOtp}. Please show this at the counter.`,
-          [
-            { 
-              text: "OK", 
-              onPress: () => router.replace('/(protected)/user/stores') 
-            }
-          ]
-        );
+        // 3. Show success modal
+        setShowSuccessModal(true);
+        
+        // 4. Navigate after short delay
+        setTimeout(() => {
+          console.log('🔄 Navigating to orders page...');
+          setShowSuccessModal(false);
+          setIsRedirecting(false);
+          
+          // Navigate to user section with orders tab selected
+          try {
+            router.replace('/(protected)/user/stores?tab=orders');
+            console.log('✅ Navigation completed');
+          } catch (error) {
+            console.error('❌ Navigation error:', error);
+          }
+        }, 1500);
       } else {
-        throw new Error(response.UImessage || "Failed to place order");
+        throw new Error(response?.UImessage || "Failed to place order");
       }
     } catch (error: any) {
       console.error("Order error:", error);
@@ -115,11 +131,21 @@ export default function PaymentScreen() {
     }
   };
 
-  if (items.length === 0) {
+  if (isRedirecting && !showSuccessModal) {
     return (
       <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
-        <Text style={{ color: theme.colors.onSurface }}>No items to pay for.</Text>
-        <Button onPress={() => router.back()} textColor={theme.colors.primary}>Go Back</Button>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={{ marginTop: 16, color: theme.colors.primary, fontWeight: '700' }}>Redirecting to orders...</Text>
+      </View>
+    );
+  }
+
+  if (items.length === 0 && !isRedirecting) {
+    return (
+      <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
+        <IconButton icon="cart-outline" size={60} iconColor={theme.colors.outline} />
+        <Text style={{ color: theme.colors.onSurface, fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Your cart is empty</Text>
+        <Button onPress={() => router.replace('/(protected)/user/stores')} textColor={theme.colors.primary}>Browse Stores</Button>
       </View>
     );
   }
@@ -178,7 +204,7 @@ export default function PaymentScreen() {
           mode="contained" 
           onPress={handlePlaceOrder}
           loading={loading}
-          disabled={loading || !!validationError || validating}
+          disabled={loading || !!validationError || validating || isRedirecting}
           style={styles.placeOrderBtn}
           buttonColor={validationError ? theme.colors.outline : theme.colors.primary}
           contentStyle={styles.placeOrderBtnContent}
@@ -186,103 +212,115 @@ export default function PaymentScreen() {
           {validationError ? "Cannot Place Order" : (loading ? "Placing Order..." : "Confirm & Place Order")}
         </Button>
       </Surface>
+
+      <Portal>
+        <Modal
+          visible={showSuccessModal}
+          dismissable={false}
+          contentContainerStyle={[styles.successModal, { backgroundColor: theme.colors.surface }]}
+        >
+          <IconButton icon="check-circle" size={60} iconColor={theme.colors.primary} style={{ alignSelf: 'center' }} />
+          <Text style={[styles.successModalTitle, { color: theme.colors.onSurface }]}>Order Placed!</Text>
+          <Text style={[styles.successModalSubtitle, { color: theme.colors.onSurfaceVariant }]}>
+            Your order has been placed successfully. Redirecting you to your orders...
+          </Text>
+          <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginTop: 20 }} />
+        </Modal>
+      </Portal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    ...COMPONENT_STYLES.container,
   },
   center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    ...COMPONENT_STYLES.centerContainer,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 45,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
+    ...COMPONENT_STYLES.header,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    letterSpacing: -0.5,
+    ...COMPONENT_STYLES.headerTitle,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.L,
+    paddingVertical: SPACING.M,
+  },
+  errorBannerText: {
+    ...TYPOGRAPHY.BODY_SEMIBOLD,
+    flex: 1,
   },
   scroll: {
-    padding: 16,
-    paddingBottom: 160,
+    padding: SPACING.L,
+    paddingBottom: SPACING.XXL * 3,
   },
   card: {
-    borderRadius: 16,
-    marginBottom: 20,
+    borderRadius: RADIUS.L,
     borderWidth: 1,
+    marginBottom: SPACING.L,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    marginBottom: 16,
-    textTransform: 'uppercase',
-    opacity: 0.6,
+    ...TYPOGRAPHY.H3,
+    marginBottom: SPACING.M,
   },
   listItem: {
     paddingHorizontal: 0,
   },
   itemPrice: {
-    fontSize: 16,
-    fontWeight: '800',
-    alignSelf: 'center',
+    ...TYPOGRAPHY.SUBTITLE,
+    paddingRight: SPACING.M,
   },
   totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
+    ...COMPONENT_STYLES.rowSpaceBetween,
+    marginTop: SPACING.S,
   },
   totalLabel: {
-    fontSize: 15,
-    fontWeight: '700',
+    ...TYPOGRAPHY.SUBTITLE,
     textTransform: 'uppercase',
     opacity: 0.6,
   },
   totalValue: {
-    fontSize: 22,
-    fontWeight: '900',
+    ...TYPOGRAPHY.H2,
   },
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
-    paddingBottom: 32,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    padding: SPACING.L,
+    paddingBottom: SPACING.XXL,
+    borderTopLeftRadius: RADIUS.XXL,
+    borderTopRightRadius: RADIUS.XXL,
     maxWidth: 600,
     alignSelf: 'center',
     width: '100%',
   },
   placeOrderBtn: {
-    borderRadius: 14,
+    borderRadius: RADIUS.L,
   },
   placeOrderBtnContent: {
     height: 52,
   },
-  errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    margin: 16,
-    borderRadius: 8,
-    marginBottom: 0,
+  successModal: {
+    margin: SPACING.L,
+    padding: SPACING.XXL,
+    borderRadius: RADIUS.XXL,
+    maxWidth: 400,
+    alignSelf: 'center',
+    width: '90%',
   },
-  errorBannerText: {
-    fontWeight: '800',
-    fontSize: 13,
-    flex: 1,
-  }
+  successModalTitle: {
+    ...TYPOGRAPHY.H2,
+    textAlign: 'center',
+    marginTop: SPACING.M,
+  },
+  successModalSubtitle: {
+    ...TYPOGRAPHY.BODY,
+    textAlign: 'center',
+    marginTop: SPACING.S,
+  },
 });
-
